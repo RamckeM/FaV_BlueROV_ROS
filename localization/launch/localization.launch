@@ -1,0 +1,12 @@
+<launch>
+
+    <include file="$(find bluerov_sim)/launch/gazebo_base.launch"/>
+
+    <include file="$(find bluerov_sim)/launch/spawn_vehicle.launch">
+        <arg name="z" value="-0.4"/>
+    </include>
+
+    <node name="range_sensor" pkg="range_sensor" type="range_sensor_node.py" output="screen" />
+    <node name="mixer" pkg="depth_controller" type="mixer.py" output="screen" />
+    
+</launch>
