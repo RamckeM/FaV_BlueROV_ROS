@@ -4,7 +4,7 @@ import numpy as np
 import random
 import math
 from std_msgs.msg import Float64
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, Point
 from range_sensor.msg import RangeMeasurementArray, RangeMeasurement
 
 
@@ -12,21 +12,25 @@ TANK_HEIGHT = 0
 TANK_LENGTH = 0
 TANK_WIDTH = 0
 
-PARTICLE_COUNT = 100
+PARTICLE_COUNT = 200
+ITERATION_STEPS = 20
+PRECISION = 0.1
 
 
 class LocalizationNode():
     def __init__(self):
         rospy.init_node("localization")
 
-        self.tag1 = Pose(0.5, 3.35, -0.5, 0.0, 0.0, 0.0, 0.0)
-        self.tag2 = Pose(1.1, 3.35, -0.5, 0.0, 0.0, 0.0, 0.0)
-        self.tag3 = Pose(0.5, 3.35, -0.9, 0.0, 0.0, 0.0, 0.0)
-        self.tag4 = Pose(1.1, 3.35, -0.9, 0.0, 0.0, 0.0, 0.0)
+        self.tag1 = Point(0.5, 3.35, -0.5)
+        self.tag2 = Point(1.1, 3.35, -0.5)
+        self.tag3 = Point(0.5, 3.35, -0.9)
+        self.tag4 = Point(1.1, 3.35, -0.9)
 
         self.particles = []
-        self.max_particles = PARTICLE_COUNT
-        self.steps = 10
+
+        self.num_particles = PARTICLE_COUNT
+        self.steps = ITERATION_STEPS
+        self.precision = PRECISION
 
         self.roll = 0
         self.pitch = 0
@@ -35,7 +39,7 @@ class LocalizationNode():
         
 
         self.particle_count_pub = rospy.Publisher("particle_count", Float64, queue_size=1)
-        self.pose_pub = rospy.Publisher("estimated_pose", Pose, queue_size=1)
+        self.point_pub = rospy.Publisher("estimated_point", Point, queue_size=1)
         self.yaw_pub = rospy.Publisher("yaw", Float64, queue_size=1)
 
 
@@ -53,6 +57,7 @@ class LocalizationNode():
 
         #Turn till three sensor measurements are valid
 
+
     
     def orientation_callback(self, msg):
         x = msg.orientation.x
@@ -68,8 +73,18 @@ class LocalizationNode():
         pass
 
 
-    def calc(self):
-        pass
+    def compare_sensor_data(self):
+        weights = []
+
+        for i in self.particles:
+            point1 = Point()
+            point1.position.x = i[0]
+            point1.position.y = i[1]
+            point1.position.z = i[2]
+
+
+
+            
 
 
     def resample(self, weights):
@@ -96,35 +111,34 @@ class LocalizationNode():
         rate = rospy.Rate(100.0)
         while not rospy.is_shutdown():
             # Initialize particles
-            for i in self.max_particle:
+            for i in range(self.num_particles):
                 x = round(random.random(), 4) * self.tank_length
                 y = round(random.random(), 4) * self.tank_width
                 z = round(random.random(), 4) * self.tank_high
-                orientation = round(random.random(), 4) 
-                self.particles.append((x, y, z, orientation))
+                self.particles.append((x, y, z))
 
+            # Monte Carlo Localization
             for i in range(self.steps):
-                
                 self.move()
                 self.calc()
                 self.resample()
 
                 
             
-            msg = Pose()
+            msg = Point()
+            mean_pos_x = 0
+            mean_pos_y = 0
+            mean_pos_z = 0
             for i in self.particles:
-                msg.position.x = 
+                mean_pos_x += i[0]
+                mean_pos_y += i[1]
+                mean_pos_z += i[2]
 
-        
-        
-        
-        msg.position.y = 0
-        msg.position.z = 0
-        msg.orientation.x = 0
-        msg.orientation.y = 0
-        msg.orientation.z = 0
-        msg.orientation.w = 0
-        self.pose_pub.publish(msg)
+            msg.position.x = mean_pos_x / self.num_particles
+            msg.position.y = mean_pos_y / self.num_particles
+            msg.position.z = mean_pos_z / self.num_particles
+    
+        self.point_pub.publish(msg)
 
         rate.sleep()
 
