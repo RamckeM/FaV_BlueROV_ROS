@@ -27,6 +27,7 @@ class DepthControlNode():
         self.integral_error = 0
 
         self.control_pub = rospy.Publisher("vertical_thrust", Float64, queue_size=1)
+        
         self.setpoint_sub = rospy.Subscriber("depth_setpoint", Float64, self.setpoint_callback, queue_size=1)
         self.depth_sub = rospy.Subscriber("depth", Float32, self.depth_callback, queue_size=1)
 
