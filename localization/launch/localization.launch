@@ -27,7 +27,20 @@
     <include file="$(find range_sensor)/launch/range_sensor.launch" />
 
     <node name="mixer" pkg="depth_controller" type="mixer.py" output="screen" />
+    <node name="depth_calculator" pkg="awesome_package" type="depth_calculator.py" output="screen" >
+        <param name="offset" value="0.0" /> <!-- 10.09 -->
+    </node>
+    <node name="depth_controller" pkg="depth_controller" type="depth_controller.py" output="screen" >
+        <param name="kp" value="1.0" /> <!--0.3-->
+        <param name="ki" value="0.1" /> <!--0.09-->
+        <param name="kd" value="0.0" /> <!--0.01-->
+        <param name="offset" value="0.0" /> <!-- -0.05 bei auftrieb-->
+        <param name="timestep" value="0.01" />
+        <param name="antiWindup" value="True" />
+    </node>
 
     <node name="localization" pkg="localization" type="localization.py" output="screen" />
+
+
 
 </launch>
