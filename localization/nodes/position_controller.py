@@ -30,7 +30,7 @@ class PositionControlNode():
         self.depth_setpoint_pub.publish(msg_depth)
 
 
-    def estimated_position_callback(Self, msg):
+    def estimated_position_callback(self, msg):
         self.estimated_position.x = msg.x
         self.estimated_position.y = msg.y
         self.estimated_position.z = msg.z
@@ -43,10 +43,10 @@ class PositionControlNode():
             lateral_error = self.position_setpoint.y - self.estimated_position.y
 
             msg_longitudinal = Float64()
-            msg_longitudinal.data = longitudinal_error
+            msg_longitudinal.data = longitudinal_error * 0.5
             self.longitudinal_thrust_pub.publish(msg_longitudinal)
             msg_lateral = Float64()
-            msg_lateral.data = lateral_error
+            msg_lateral.data = lateral_error * 0.5
             self.lateral_thrust_pub.publish(msg_lateral)
 
             rate.sleep()

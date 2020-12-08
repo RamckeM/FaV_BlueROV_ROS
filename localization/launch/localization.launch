@@ -39,9 +39,11 @@
         <param name="antiWindup" value="True" />
     </node>
 
-    <node name="position_controller" pkg="localization" type="position_controller.py" output="screen" />
+    <!-- <node name="position_controller" pkg="localization" type="position_controller.py" output="screen" /> -->
 
     <node name="localization" pkg="localization" type="localization.py" output="screen" />
+    
+    <!-- <node name="minimization_localization" pkg="localization" type="minimizing_cost_function.py" output="screen" /> -->
 
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import numpy as np
-import scipy
+from scipy.optimize import minimize
 import random
 import math
 from std_msgs.msg import Float64
@@ -21,24 +21,31 @@ class MinimizationNode():
         self.bounds = [(0,2),(0,3.35),(-1.2,0)]
         self.x0 = np.array([0.8,1.5,-0.7])
 
+        self.measurements = np.zeros((4, 2))
+
         self.range_sub = rospy.Subscriber("ranges", RangeMeasurementArray, self.range_callback, queue_size=1)
         self.position_pub = rospy.Publisher("raw_position", Point, queue_size=1)    
     
-    def range_callback(self, msg):
-        self.distances = msg.range    
+    def range_callback(self, range_array_msg):
+        number_anchors = len(range_array_msg.measurements) 
+        for index, measurement in enumerate(range_array_msg.measurements):
+            anchor_id = measurement.id
+            range_measurement = measurement.range        
+            self.measurements[index, 0] = range_measurement
+            self.measurements[index, 1] = anchor_id    
         
     def costfun(self, x):
-        y1 = np.linalg.norm(tag1-x)
-        y2 = np.linalg.norm(tag2-x)
-        y3 = np.linalg.norm(tag3-x)
-        y4 = np.linalg.norm(tag4-x)
+        y1 = np.linalg.norm(self.tag1-x)
+        y2 = np.linalg.norm(self.tag2-x)
+        y3 = np.linalg.norm(self.tag3-x)
+        y4 = np.linalg.norm(self.tag4-x)
         y = np.array([y1, y2, y3, y4])
         return np.mean((y-self.distances)**2)    
         
     def run(self):
         rate = rospy.Rate(100.0)
         while not rospy.is_shutdown():
-            x = scipy.optimize.minimize(costfun, self.x0, args=(self), method="TNC", bounds=self.bounds)
+            x = minimize(self.costfun, self.x0, args=(self), method="TNC", bounds=self.bounds)
             msg = Point()
             msg.data = x
             self.position_pub.publish(msg)
