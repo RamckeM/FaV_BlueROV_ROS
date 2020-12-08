@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import rospy
-import tf
 import numpy as np
 import random
 import math
@@ -9,67 +8,64 @@ from geometry_msgs.msg import Pose, Point
 from range_sensor.msg import RangeMeasurementArray, RangeMeasurement
 
 
-TANK_HEIGHT = 0
-TANK_LENGTH = 0
-TANK_WIDTH = 0
+TANK_HEIGHT = 1
+TANK_LENGTH = 3.8
+TANK_WIDTH = 2.7
 
 PARTICLE_COUNT = 200
-ITERATION_STEPS = 20
-PRECISION = 0.1
 
 
 class LocalizationNode():
     def __init__(self):
         rospy.init_node("localization")
 
-        self.tag1 = Point(0.5, 3.35, -0.5)
-        self.tag2 = Point(1.1, 3.35, -0.5)
-        self.tag3 = Point(0.5, 3.35, -0.9)
-        self.tag4 = Point(1.1, 3.35, -0.9)
-
-        self.particles = []
+        self.tag_1 = np.array([0.5,3.35,-0.5])
+        self.tag_2 = np.array([1.1,3.35,-0.5])
+        self.tag_3 = np.array([0.5,3.35,-0.9])
+        self.tag_4 = np.array([1.1,3.35,-0.9])
 
         self.num_particles = PARTICLE_COUNT
-        self.steps = ITERATION_STEPS
-        self.precision = PRECISION
+        self.particles = np.array([[0,0,0]])
+
+        self.ranges = []
+        self.weights = []
 
         self.roll = 0
         self.pitch = 0
         self.yaw = 0
 
-        
+        self.initialize_particles()
 
-        self.particle_count_pub = rospy.Publisher("particle_count", Float64, queue_size=1)
         self.position_pub = rospy.Publisher("estimated_position", Point, queue_size=1)
         self.yaw_pub = rospy.Publisher("yaw", Float64, queue_size=1)
-
-
-        self.range = 0
+        
         self.range_sub = rospy.Subscriber("ranges", RangeMeasurementArray, self.range_callback, queue_size=1)
         self.orientation_sub = rospy.Subscriber("mavros/local_position/pose", Pose, self.orientation_callback, queue_size=1)
     
 
     def range_callback(self, msg):
 # Get data correctly
-        self.range[1] = msg.range
-        self.range[2] = msg.range
-        self.range[3] = msg.range
-        self.range[4] = msg.range
+        self.ranges = msg.measurements
+        # self.ranges[2] = msg.
+        # self.ranges[3] = msg.
+        # self.ranges[4] = msg.
+        message = Float64()
+        message.data = ranges[0]
+        self.yaw_pub.publish(message)
 
-        valid_sensors = 4
-        for i in self.range:
-            if self.range[i] == 0:
-                valid_sensors -= 1
+        # valid_sensors = 4
+        # for i in self.range:
+        #     if self.range[i] == 0:
+        #         valid_sensors -= 1
         
-        if valid_sensors < 3:
-            pass
+        # if valid_sensors < 3:
+        #     pass
 
-
+        # tag nummerierung ist bekannt! -> checke ob links oder rechts rum drehen
 
         #Turn till three sensor measurements are valid
 
 
-    
     def orientation_callback(self, msg):
         x = msg.orientation.x
         y = msg.orientation.y
@@ -83,38 +79,36 @@ class LocalizationNode():
     def euclidean_dist(self, point1, point2):
         return math.sqrt((point1[0] - point2[0]) **2 + (point1[1] - point2[1])**2 + (point1[2] - point2[2])**2)
 
-    def move(self):
+
+    def initialize_particles(self):
+        for i in range(self.num_particles):
+            x = round(random.random(), 4) * TANK_LENGTH
+            y = round(random.random(), 4) * TANK_WIDTH
+            z = round(random.random(), 4) * TANK_HEIGHT
+            self.particles = np.append(self.particles, [[x, y, z]], axis=0)
+
+            # self.particles[n] returns nth particle
+            # self.particles[n][m] returns mth coordinate of nth particle
+
+
+    def dead_reckon(self):
         pass
+        #addiere rauschen auf bewegung
+        # nutze imu daten
 
 
-    def compute_distances(self):
-        weights = []
+    def weighting(self):
+        for i in range(self.num_particles):
+            diff_1 = self.euclidean_dist(self.particles[i], self.tag_1) - self.ranges[0]
+            diff_2 = self.euclidean_dist(self.particles[i], self.tag_2) - self.ranges[1]
+            diff_3 = self.euclidean_dist(self.particles[i], self.tag_3) - self.ranges[2]
+            diff_4 = self.euclidean_dist(self.particles[i], self.tag_4) - self.ranges[3]
 
-        for i in self.particles:
-            particle = Point()
-            particle.x = i[0]
-            particle.y = i[1]
-            particle.z = i[2]
+            mean_diff = (diff_1 + diff_2 + diff_3 + diff_4) / 4
+            self.weights.append(mean_diff)
 
-            distance1 = self.euclidean_dist(particle, tag1)
-            distance2 = self.euclidean_dist(particle, tag2)
-            distance3 = self.euclidean_dist(particle, tag3)
-            distance4 = self.euclidean_dist(particle, tag4)
-
-            diff1 = distance1 - self.range[1]
-            diff2 = distance2 - self.range[2]
-            diff3 = distance3 - self.range[3]
-            diff4 = distance4 - self.range[4]
-
-            weigths[i] = 4 / (diff1 + diff2 + diff3 + diff4)
-
-            
-
-        
-
-
-
-            
+        # Normalize weights
+        self.weights /= np.sum(self.weights)
 
 
     def resample(self, weights):
@@ -140,18 +134,10 @@ class LocalizationNode():
     def run(self):
         rate = rospy.Rate(100.0)
         while not rospy.is_shutdown():
-            # Initialize particles
-            for i in range(self.num_particles):
-                x = round(random.random(), 4) * self.tank_length
-                y = round(random.random(), 4) * self.tank_width
-                z = round(random.random(), 4) * self.tank_high
-                self.particles.append((x, y, z))
-
-            # Monte Carlo Localization
-            for i in range(self.steps):
-                self.move()
-                self.calc()
-                self.resample()
+            
+            self.weighting()
+            
+            self.resample()
 
                 
 
@@ -160,10 +146,11 @@ class LocalizationNode():
             mean_pos_x = 0
             mean_pos_y = 0
             mean_pos_z = 0
-            for i in self.particles:
-                mean_pos_x += i[0]
-                mean_pos_y += i[1]
-                mean_pos_z += i[2]
+
+            for i in range(self.num_particles):
+                mean_pos_x += self.particles[i][0]
+                mean_pos_y += self.particles[i][1]
+                mean_pos_z += self.particles[i][2]
 
             msg.x = mean_pos_x / self.num_particles
             msg.y = mean_pos_y / self.num_particles
@@ -171,7 +158,8 @@ class LocalizationNode():
     
             self.point_pub.publish(msg)
 
-        rate.sleep()
+
+            rate.sleep()
 
 
 def main():

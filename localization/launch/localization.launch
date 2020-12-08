@@ -31,13 +31,15 @@
         <param name="offset" value="0.0" /> <!-- 10.09 -->
     </node>
     <node name="depth_controller" pkg="depth_controller" type="depth_controller.py" output="screen" >
-        <param name="kp" value="1.0" /> <!--0.3-->
-        <param name="ki" value="0.1" /> <!--0.09-->
+        <param name="kp" value="0.3" /> <!--1.0-->
+        <param name="ki" value="0.09" /> <!--0.1-->
         <param name="kd" value="0.0" /> <!--0.01-->
-        <param name="offset" value="0.0" /> <!-- -0.05 bei auftrieb-->
+        <param name="offset" value="-0.05" /> <!-- -0.05 bei auftrieb-->
         <param name="timestep" value="0.01" />
         <param name="antiWindup" value="True" />
     </node>
+
+    <node name="position_controller" pkg="localization" type="position_controller.py" output="screen" />
 
     <node name="localization" pkg="localization" type="localization.py" output="screen" />
 

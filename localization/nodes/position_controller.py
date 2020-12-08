@@ -20,23 +20,23 @@ class PositionControlNode():
         self.lateral_thrust_pub = rospy.Publisher("lateral_thrust", Float64, queue_size=1)
 
 
-def position_setpoint_callback(self, msg):
-    self.position_setpoint.x = msg.x
-    self.position_setpoint.y = msg.y
-    self.position_setpoint.z = msg.z
+    def position_setpoint_callback(self, msg):
+        self.position_setpoint.x = msg.x
+        self.position_setpoint.y = msg.y
+        self.position_setpoint.z = msg.z
 
-    msg_depth = Float64
-    msg_depth.data =  msg.z
-    self.depth_setpoint_pub.publish(msg_depth)
-
-
-def estimated_position_callback(Self, msg):
-    self.estimated_position.x = msg.x
-    self.estimated_position.y = msg.y
-    self.estimated_position.z = msg.z
+        msg_depth = Float64
+        msg_depth.data =  msg.z
+        self.depth_setpoint_pub.publish(msg_depth)
 
 
-def run(self):
+    def estimated_position_callback(Self, msg):
+        self.estimated_position.x = msg.x
+        self.estimated_position.y = msg.y
+        self.estimated_position.z = msg.z
+
+
+    def run(self):
         rate = rospy.Rate(100.0)
         while not rospy.is_shutdown():
             longitudinal_error = self.position_setpoint.x - self.estimated_position.x
@@ -49,7 +49,7 @@ def run(self):
             msg_lateral.data = lateral_error
             self.lateral_thrust_pub.publish(msg_lateral)
 
-        rate.sleep()
+            rate.sleep()
 
 
 def main():
