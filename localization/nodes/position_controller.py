@@ -21,7 +21,7 @@ class PositionControlNode():
 
         # Listens to manual published topic
         self.position_setpoint_sub = rospy.Subscriber("position_setpoint", Point, self.position_setpoint_callback, queue_size=1)
-        self.estimated_position_sub = rospy.Subscriber("estimated_position", Point, self.estimated_position_callback, queue_size=1)
+        self.estimated_position_sub = rospy.Subscriber("mcl_position", Point, self.estimated_position_callback, queue_size=1)
         
         self.ground_truth_sub = rospy.Subscriber("ground_truth/state", Odometry, self.ground_truth_callback, queue_size=1)
         self.mavros_pose_sub = rospy.Subscriber("mavros/local_position/pose", PoseStamped, self.mavros_pose_callback, queue_size=1)
@@ -51,7 +51,7 @@ class PositionControlNode():
         self.position_setpoint.y = msg.y
         self.position_setpoint.z = msg.z
 
-        msg_depth = Float64
+        msg_depth = Float64()
         msg_depth.data =  msg.z
         self.depth_setpoint_pub.publish(msg_depth)
 
@@ -68,9 +68,9 @@ class PositionControlNode():
         else:
             yaw_error = math.pi/2. - self.yaw_mavros
         
-        msg = Float64()
-        msg.data = yaw_error * 0.25
-        self.yaw_thrust
+        msg_yaw = Float64()
+        msg_yaw.data = yaw_error * 0.25
+        self.yaw_thrust_pub.publish(msg_yaw)
 
 
     def run(self):

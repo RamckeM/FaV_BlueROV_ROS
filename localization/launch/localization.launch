@@ -26,7 +26,13 @@
     <!--Our Range Sensor Package that publishes distances to tags -->
     <include file="$(find range_sensor)/launch/range_sensor.launch" />
 
+
+    <!-- <node name="keyboard" pkg="bluerov_sim" type="keyboard_control.py" output="screen" />
+    <node name="mixer" pkg="bluerov_sim" type="mixer.py" /> -->
+
+
     <node name="mixer" pkg="depth_controller" type="mixer.py" output="screen" />
+
     <node name="depth_calculator" pkg="awesome_package" type="depth_calculator.py" output="screen" >
         <param name="offset" value="0.0" /> <!-- 10.09 -->
     </node>
@@ -44,7 +50,9 @@
     <node name="position_controller" pkg="localization" type="position_controller.py" output="screen" />
 
     <!-- Tools -->
-    <!-- <node name="" pkg="" type=".py" output="screen" /> -->
+    <node name="comparison_node" pkg="localization" type="comparison.py" output="screen" />
+    <node name="data_crunching_node" pkg="localization" type="data_crunching.py" output="screen" />
+    <node name="range_analysis_node" pkg="localization" type="range_analysis.py" output="screen" />
 
 
 

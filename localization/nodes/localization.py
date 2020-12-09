@@ -12,6 +12,8 @@ TANK_HEIGHT = 1
 TANK_LENGTH = 3.8
 TANK_WIDTH = 2.7
 
+SENSOR_POSITION = np.array([0, 0.2, 0.1])
+
 PARTICLE_COUNT = 1000
 
 
@@ -19,26 +21,26 @@ class LocalizationNode():
     def __init__(self):
         rospy.init_node("localization")
 
-        self.tag_1 = np.array([0.5,3.35,-0.5])
-        self.tag_2 = np.array([1.1,3.35,-0.5])
-        self.tag_3 = np.array([0.5,3.35,-0.9])
-        self.tag_4 = np.array([1.1,3.35,-0.9])
+        self.tag_1 = np.array([0.5, 3.35, -0.5])
+        self.tag_2 = np.array([1.1, 3.35, -0.5])
+        self.tag_3 = np.array([0.5, 3.35, -0.9])
+        self.tag_4 = np.array([1.1, 3.35, -0.9])
 
         self.num_particles = PARTICLE_COUNT
+        
         self.particles = []
-
         self.weights = []
 
         self.ranges = np.array([0.0, 0.0, 0.0, 0.0])
 
         self.initialize_particles()
 
-        self.position_pub = rospy.Publisher("estimated_position", Point, queue_size=1)
-        self.variance_pub = rospy.Publisher("position_variance", Float64, queue_size=1)
+        self.position_pub = rospy.Publisher("mcl_position", Point, queue_size=1)
+        self.error_pub = rospy.Publisher("error_mcl_prediction", Float64, queue_size=1)
         #self.particle_count_pub = rospy.Publisher("particle_count", Float64, queue_size=1)
-        
+
         self.range_sub = rospy.Subscriber("ranges", RangeMeasurementArray, self.range_callback, queue_size=1)
-    
+
 
     def range_callback(self, msg):
         num_measurements = len(msg.measurements)
@@ -46,15 +48,15 @@ class LocalizationNode():
             for measurement in msg.measurements:
                 self.ranges[measurement.id - 1] = measurement.range
         else:
-            print("WARNING: No measurements received!")   
+            print("WARNING: No measurements received!")
 
 
     def initialize_particles(self):
         for i in range(self.num_particles):
             x = round(random.random(), 4) * TANK_LENGTH
             y = round(random.random(), 4) * TANK_WIDTH
-            z = round(random.random(), 4) * TANK_HEIGHT
-            self.particles = np.append(self.particles, [[x, y, z]], axis=0)
+            z = -round(random.random(), 4) * TANK_HEIGHT
+            self.particles.append(np.array([x, y, z]))
 
             # self.particles[n] returns n'th particle
             # self.particles[n][m] returns m'th coordinate of nth particle
@@ -83,15 +85,22 @@ class LocalizationNode():
         sigma = 0.07    # Dont make sigma too small
 
         for i, particle in enumerate(self.particles):
-            diff1 = np.linalg.norm(self.particles[i] - self.tag_1) - self.ranges[0]
-            diff2 = np.linalg.norm(self.particles[i] - self.tag_2) - self.ranges[1]
-            diff3 = np.linalg.norm(self.particles[i] - self.tag_3) - self.ranges[2]
-            diff4 = np.linalg.norm(self.particles[i] - self.tag_4) - self.ranges[3]
-            
-            w1 = abs((1 / sigma * np.sqrt(2 * math.pi)) * np.exp(-1 / 2 * np.power(diff1 / sigma, 2.0)))
-            w2 = abs((1 / sigma * np.sqrt(2 * math.pi)) * np.exp(-1 / 2 * np.power(diff2 / sigma, 2.0)))
-            w3 = abs((1 / sigma * np.sqrt(2 * math.pi)) * np.exp(-1 / 2 * np.power(diff3 / sigma, 2.0)))
-            w4 = abs((1 / sigma * np.sqrt(2 * math.pi)) * np.exp(-1 / 2 * np.power(diff4 / sigma, 2.0)))
+            diff1 = np.linalg.norm(self.particles[i] -
+                                   self.tag_1) - self.ranges[0]
+            diff2 = np.linalg.norm(self.particles[i] -
+                                   self.tag_2) - self.ranges[1]
+            diff3 = np.linalg.norm(self.particles[i] -
+                                   self.tag_3) - self.ranges[2]
+            diff4 = np.linalg.norm(self.particles[i] -
+                                   self.tag_4) - self.ranges[3]
+            w1 = abs((1 / sigma * np.sqrt(2 * math.pi)) *
+                     np.exp(-1 / 2 * np.power(diff1 / sigma, 2.0)))
+            w2 = abs((1 / sigma * np.sqrt(2 * math.pi)) *
+                     np.exp(-1 / 2 * np.power(diff2 / sigma, 2.0)))
+            w3 = abs((1 / sigma * np.sqrt(2 * math.pi)) *
+                     np.exp(-1 / 2 * np.power(diff3 / sigma, 2.0)))
+            w4 = abs((1 / sigma * np.sqrt(2 * math.pi)) *
+                     np.exp(-1 / 2 * np.power(diff4 / sigma, 2.0)))
 
             weights.append(np.mean([w1, w2, w3, w4]))
 
@@ -106,7 +115,6 @@ class LocalizationNode():
 
     def resample(self):
         particles = []
-
         index_array = range(self.num_particles)
 
         for i in index_array:
@@ -114,7 +122,6 @@ class LocalizationNode():
             particles.append(self.particles[index])
 
         self.particles = particles
-        self.num_particles = len(particles)
 
         # msg = Float64()
         # msg.data = num_particles
@@ -122,25 +129,25 @@ class LocalizationNode():
 
 
     def run(self):
-        rate = rospy.Rate(10.0)
+        rate = rospy.Rate(20.0)
         while not rospy.is_shutdown():
             self.motion_model()
-            self.measurement_model
+            self.measurement_model()
             self.resample()
 
             particle_mean = np.mean(self.particles, axis=0)
+            particle_mean -= SENSOR_POSITION
             particle_variance = np.var(self.particles, axis=0)
 
             position_msg = Point()
             position_msg.x = particle_mean[0]
             position_msg.y = particle_mean[1]
             position_msg.z = particle_mean[2]
+            error_msg = Float64()
+            error_msg.data = np.mean(particle_variance)
 
-            variance_msg = Float64()
-            variance_msg.data = np.mean(particle_variance)
-    
             self.position_pub.publish(position_msg)
-            self.variance_pub.publish(variance_msg)
+            self.error_pub.publish(error_msg)
 
             rate.sleep()
 
