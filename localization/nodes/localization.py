@@ -16,7 +16,6 @@ SENSOR_POSITION = np.array([0, 0.2, 0.1])
 
 PARTICLE_COUNT = 1000
 
-
 class LocalizationNode():
     def __init__(self):
         rospy.init_node("localization")
@@ -63,8 +62,6 @@ class LocalizationNode():
 
 
     def dead_reckon(self):
-        # Use IMU Data
-        # Add Gaussian Noise
         pass
 
 

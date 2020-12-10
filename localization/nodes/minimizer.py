@@ -3,7 +3,7 @@ import rospy
 import numpy as np
 from scipy import optimize
 from std_msgs.msg import Float64
-from geometry_msgs.msg import Pose, Point
+from geometry_msgs.msg import Point
 from range_sensor.msg import RangeMeasurementArray, RangeMeasurement
 
 

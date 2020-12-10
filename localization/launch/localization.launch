@@ -47,7 +47,12 @@
 
     <node name="localization" pkg="localization" type="localization.py" output="screen" />
     <node name="minimizer" pkg="localization" type="minimizer.py" output="screen" />
-    <node name="position_controller" pkg="localization" type="position_controller.py" output="screen" />
+
+    <node name="position_controller" pkg="localization" type="position_controller.py" output="screen" >
+        <param name="yaw_gain" value="0.25" />
+        <param name="longitudinal_gain" value="0.5" />
+        <param name="lateral_gain" value="0.5" />
+    </node>
 
     <!-- Tools -->
     <node name="comparison_node" pkg="localization" type="comparison.py" output="screen" />

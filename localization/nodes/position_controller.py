@@ -13,7 +13,14 @@ class PositionControlNode():
     def __init__(self):
         rospy.init_node("position_controller")
 
+        self.yaw_gain = rospy.get_param('~yaw_gain')
+        self.longitudinal_gain = rospy.get_param('~longitudinal_gain')
+        self.lateral_gain = rospy.get_param('~lateral_gain')
+
         self.position_setpoint = Point()
+        self.position_setpoint.x = 0.0
+        self.position_setpoint.y = 0.0
+        self.position_setpoint.z = 0.0
         self.estimated_position = Point()
 
         self.yaw_ground_truth = 0.0
@@ -51,9 +58,9 @@ class PositionControlNode():
         self.position_setpoint.y = msg.y
         self.position_setpoint.z = msg.z
 
-        msg_depth = Float64()
-        msg_depth.data =  msg.z
-        self.depth_setpoint_pub.publish(msg_depth)
+        # msg_depth = Float64()
+        # msg_depth.data =  msg.z
+        # self.depth_setpoint_pub.publish(msg_depth)
 
 
     def estimated_position_callback(self, msg):
@@ -69,7 +76,7 @@ class PositionControlNode():
             yaw_error = math.pi/2. - self.yaw_mavros
         
         msg_yaw = Float64()
-        msg_yaw.data = yaw_error * 0.25
+        msg_yaw.data = yaw_error * self.yaw_gain
         self.yaw_thrust_pub.publish(msg_yaw)
 
 
@@ -78,15 +85,22 @@ class PositionControlNode():
         while not rospy.is_shutdown():
             self.yaw_controller()
             
-            longitudinal_error = self.position_setpoint.x - self.estimated_position.x
-            lateral_error = self.position_setpoint.y - self.estimated_position.y
+            if self.position_setpoint.x != 0.0 and self.position_setpoint.y != 0.0 and self.position_setpoint.z != 0.0:
 
-            msg_longitudinal = Float64()
-            msg_longitudinal.data = longitudinal_error * 0.5
-            self.longitudinal_thrust_pub.publish(msg_longitudinal)
-            msg_lateral = Float64()
-            msg_lateral.data = lateral_error * 0.5
-            self.lateral_thrust_pub.publish(msg_lateral)
+                longitudinal_error = self.position_setpoint.x - self.estimated_position.x
+                lateral_error = self.position_setpoint.y - self.estimated_position.y
+
+                msg_longitudinal = Float64()
+                msg_longitudinal.data = longitudinal_error * self.longitudinal_gain
+                self.longitudinal_thrust_pub.publish(msg_longitudinal)
+
+                msg_lateral = Float64()
+                msg_lateral.data = lateral_error * self. lateral_gain
+                self.lateral_thrust_pub.publish(msg_lateral)
+
+                msg_depth_setpoint = Float64()
+                msg_depth_setpoint.data = self.position_setpoint.z
+                self.depth_setpoint_pub.publish(msg_depth_setpoint)
 
             rate.sleep()
 
