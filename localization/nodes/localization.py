@@ -9,8 +9,8 @@ from range_sensor.msg import RangeMeasurementArray, RangeMeasurement
 
 
 TANK_HEIGHT = 1
-TANK_LENGTH = 3.8
-TANK_WIDTH = 2.7
+TANK_LENGTH = 4
+TANK_WIDTH = 2
 
 SENSOR_POSITION = np.array([0, 0.2, 0.1])
 
@@ -79,7 +79,7 @@ class LocalizationNode():
 
     def measurement_model(self):
         weights = []
-        sigma = 0.07    # Dont make sigma too small
+        sigma = 0.05    # Dont make sigma too small
 
         for i, particle in enumerate(self.particles):
             diff1 = np.linalg.norm(self.particles[i] -
@@ -91,15 +91,16 @@ class LocalizationNode():
             diff4 = np.linalg.norm(self.particles[i] -
                                    self.tag_4) - self.ranges[3]
             w1 = abs((1 / sigma * np.sqrt(2 * math.pi)) *
-                     np.exp(-1 / 2 * np.power(diff1 / sigma, 2.0)))
+                     np.exp(-1 / 2 * np.power(diff1 / sigma, 2.0))) + 0.000001
             w2 = abs((1 / sigma * np.sqrt(2 * math.pi)) *
-                     np.exp(-1 / 2 * np.power(diff2 / sigma, 2.0)))
+                     np.exp(-1 / 2 * np.power(diff2 / sigma, 2.0))) + 0.000001
             w3 = abs((1 / sigma * np.sqrt(2 * math.pi)) *
-                     np.exp(-1 / 2 * np.power(diff3 / sigma, 2.0)))
+                     np.exp(-1 / 2 * np.power(diff3 / sigma, 2.0))) + 0.000001
             w4 = abs((1 / sigma * np.sqrt(2 * math.pi)) *
-                     np.exp(-1 / 2 * np.power(diff4 / sigma, 2.0)))
+                     np.exp(-1 / 2 * np.power(diff4 / sigma, 2.0))) + 0.000001
 
             weights.append(np.mean([w1, w2, w3, w4]))
+
 
         # Normalize weights
         weight_sum = np.sum(weights)

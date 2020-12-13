@@ -19,8 +19,8 @@ class MinimizationNode():
         self.tag4 = np.array([1.1, 3.35, -0.9])
 
         self.distances = np.array([1.0, 1.0, 1.0, 1.0])
-        self.bounds = [(0, 2), (0, 3.35), (-1.2, 0)]
-        self.x0 = np.array([0.8, 1.5, -0.7])
+        self.bounds = [(0, 2), (0, 3.35), (-1.4, 0)]
+        self.x0 = np.array([0.8, 2, -0.7])
 
         self.range_sub = rospy.Subscriber("ranges", RangeMeasurementArray, self.range_callback, queue_size=1)
 
