@@ -44,6 +44,7 @@ class DepthControlNode():
         self.tuneKd_sub = rospy.Subscriber("tuneKd", Float64, self.tuneKd_callback, queue_size=1)
         self.tuneOffset_sub = rospy.Subscriber("tuneOffset", Float64, self.tuneOffset_callback, queue_size=1)
     
+    
     def tuneKp_callback(self, msg):
         self.kp = msg.data
 

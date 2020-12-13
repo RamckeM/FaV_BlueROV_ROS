@@ -5,7 +5,7 @@ import math
 import numpy as np
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Point
-from range_sensor.msg import RangeMeasurementArray, RangeMeasurement
+from range_sensor.msg import RangeMeasurementArray
 
 
 TANK_HEIGHT = 1
@@ -15,6 +15,7 @@ TANK_WIDTH = 2
 SENSOR_POSITION = np.array([0, 0.2, 0.1])
 
 PARTICLE_COUNT = 1000
+
 
 class LocalizationNode():
     def __init__(self):
@@ -36,7 +37,6 @@ class LocalizationNode():
 
         self.position_pub = rospy.Publisher("mcl_position", Point, queue_size=1)
         self.error_pub = rospy.Publisher("error_mcl_prediction", Float64, queue_size=1)
-        #self.particle_count_pub = rospy.Publisher("particle_count", Float64, queue_size=1)
 
         self.range_sub = rospy.Subscriber("ranges", RangeMeasurementArray, self.range_callback, queue_size=1)
 
@@ -79,7 +79,8 @@ class LocalizationNode():
 
     def measurement_model(self):
         weights = []
-        sigma = 0.05    # Dont make sigma too small
+        # Dont make sigma too small
+        sigma = 0.05
 
         for i, particle in enumerate(self.particles):
             diff1 = np.linalg.norm(self.particles[i] -
@@ -120,10 +121,6 @@ class LocalizationNode():
             particles.append(self.particles[index])
 
         self.particles = particles
-
-        # msg = Float64()
-        # msg.data = num_particles
-        # self.particle_count_pub.publish(msg)
 
 
     def run(self):

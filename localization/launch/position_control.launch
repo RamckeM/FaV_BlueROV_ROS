@@ -32,9 +32,10 @@
     <node name="depth_calculator" pkg="awesome_package" type="depth_calculator.py" output="screen" >
         <param name="offset" value="0.0" /> <!-- 10.09 -->
     </node>
+
     <node name="depth_controller" pkg="depth_controller" type="depth_controller.py" output="screen" >
-        <param name="kp" value="1.0" /> <!--0.3-->
-        <param name="ki" value="0.1" /> <!--0.09-->
+        <param name="kp" value="0.3" /> <!--1.0-->
+        <param name="ki" value="0.09" /> <!--0.1-->
         <param name="kd" value="0.0" /> <!--0.01-->
         <param name="offset" value="-0.0" /> <!-- -0.05 bei auftrieb-->
         <param name="timestep" value="0.01" />
@@ -45,16 +46,15 @@
     <node name="minimizer" pkg="localization" type="minimizer.py" output="screen" />
 
     <node name="position_controller" pkg="localization" type="position_controller.py" output="screen" >
+        <param name="is_simulation" value="True" />
         <param name="yaw_gain" value="0.4" />
         <param name="longitudinal_gain" value="0.3" />
         <param name="lateral_gain" value="0.3" />
     </node>
 
     <!-- Tools -->
-    <node name="comparison_node" pkg="localization" type="comparison.py" output="screen" />
+    <!-- <node name="comparison_node" pkg="localization" type="comparison.py" output="screen" />
     <node name="data_crunching_node" pkg="localization" type="data_crunching.py" output="screen" />
-    <node name="range_analysis_node" pkg="localization" type="range_analysis.py" output="screen" />
-
-
-
+    <node name="range_analysis_node" pkg="localization" type="range_analysis.py" output="screen" /> -->
+    
 </launch>

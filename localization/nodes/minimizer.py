@@ -4,10 +4,15 @@ import numpy as np
 from scipy import optimize
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Point
-from range_sensor.msg import RangeMeasurementArray, RangeMeasurement
+from range_sensor.msg import RangeMeasurementArray
 
+
+TANK_DEPTH = -1
+TANK_LENGTH = 4
+TANK_WIDTH = 2
 
 SENSOR_POSITION = np.array([0, 0.2, 0.1])
+
 
 class MinimizationNode():
     def __init__(self):
@@ -18,14 +23,15 @@ class MinimizationNode():
         self.tag3 = np.array([0.5, 3.35, -0.9])
         self.tag4 = np.array([1.1, 3.35, -0.9])
 
-        self.distances = np.array([1.0, 1.0, 1.0, 1.0])
-        self.bounds = [(0, 2), (0, 3.35), (-1.4, 0)]
-        self.x0 = np.array([0.8, 2, -0.7])
+        self.distances = np.array([0.0, 0.0, 0.0, 0.0])
 
-        self.range_sub = rospy.Subscriber("ranges", RangeMeasurementArray, self.range_callback, queue_size=1)
+        self.bounds = [(0, TANK_WIDTH), (0, TANK_LENGTH), (TANK_DEPTH, 0)]
+        self.x0 = np.array([0.7, 2, -0.7])
 
         self.position_pub = rospy.Publisher("opt_position", Point, queue_size=1)
         self.error_pub = rospy.Publisher("error_opt_prediction", Float64, queue_size=1)
+
+        self.range_sub = rospy.Subscriber("ranges", RangeMeasurementArray, self.range_callback, queue_size=1)
 
 
     def range_callback(self, msg):
@@ -45,7 +51,7 @@ class MinimizationNode():
             x = res.x
             self.x0 = x
             predicted_error = res.fun
-            x = x - SENSOR_POSITION
+            x -= SENSOR_POSITION
 
             position_msg = Point()
             position_msg.x = x[0]
