@@ -38,9 +38,9 @@
     <node name="minimizer" pkg="localization" type="minimizer.py" output="screen" />
 
     <!-- Tools -->
-    <node name="comparison_node" pkg="localization" type="comparison.py" output="screen" />
+    <!-- <node name="comparison_node" pkg="localization" type="comparison.py" output="screen" />
     <node name="data_crunching_node" pkg="localization" type="data_crunching.py" output="screen" />
-    <node name="range_analysis_node" pkg="localization" type="range_analysis.py" output="screen" />
+    <node name="range_analysis_node" pkg="localization" type="range_analysis.py" output="screen" /> -->
 
 
 </launch>

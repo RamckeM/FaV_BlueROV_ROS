@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import math
-from std_msgs.msg import Float64, Bool
+from std_msgs.msg import Float64
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Point, Quaternion, PoseWithCovarianceStamped
 from tf.transformations import euler_from_quaternion
@@ -11,14 +11,13 @@ TANK_DEPTH = -1
 TANK_LENGTH = 4
 TANK_WIDTH = 2
 
-
 class PositionControlNode():
     def __init__(self):
         rospy.init_node("position_controller")
 
-        self.position_setpoint = Point()
         self.mcl_position = Point()
         self.opt_position = Point()
+        self.position_setpoint = Point()
     
         self.position_setpoint.x = 0.7
         self.position_setpoint.y = 2.0
@@ -42,9 +41,9 @@ class PositionControlNode():
         self.mavros_orientation_sub = rospy.Subscriber("mavros/vision_pose/pose_cov", PoseWithCovarianceStamped, self.mavros_orientation_callback,queue_size=1)
 
         self.depth_setpoint_pub = rospy.Publisher("depth_setpoint", Float64, queue_size=1)
+        self.yaw_thrust_pub = rospy.Publisher("yaw", Float64, queue_size=1)
         self.longitudinal_thrust_pub = rospy.Publisher("thrust", Float64, queue_size=1)
         self.lateral_thrust_pub = rospy.Publisher("lateral_thrust", Float64, queue_size=1)
-        self.yaw_thrust_pub = rospy.Publisher("yaw", Float64, queue_size=1)
 
 
     def ground_orientation_callback(self,msg):
@@ -52,7 +51,6 @@ class PositionControlNode():
         orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
         (roll, pitch, yaw) = euler_from_quaternion(orientation_list)
         self.yaw_ground = yaw
-
 
     def mavros_orientation_callback(self, msg):
         orientation_q = msg.pose.pose.orientation
@@ -66,12 +64,10 @@ class PositionControlNode():
         self.mcl_position.y = msg.y
         self.mcl_position.z = msg.z
 
-
     def opt_position_callback(self, msg):
         self.opt_position.x = msg.x
         self.opt_position.y = msg.y
         self.opt_position.z = msg.z
-
 
     def setpoint_callback(self, msg):
         self.position_setpoint.x = msg.x
@@ -95,7 +91,6 @@ class PositionControlNode():
         while not rospy.is_shutdown():
             lateral_error = self.position_setpoint.x - self.mcl_position.x
             longitudinal_error = self.position_setpoint.y - self.mcl_position.y
-            
 
             if (self.mcl_position.x < 0 or self.mcl_position.x > TANK_WIDTH or self.mcl_position.y < 0 or self.mcl_position.y > TANK_LENGTH
             or self.position_setpoint.x < 0 or self.position_setpoint.x > TANK_WIDTH or self.position_setpoint.y < 0 or self.position_setpoint.y > TANK_LENGTH):

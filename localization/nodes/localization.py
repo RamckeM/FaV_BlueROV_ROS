@@ -8,14 +8,13 @@ from geometry_msgs.msg import Point
 from range_sensor.msg import RangeMeasurementArray
 
 
-TANK_HEIGHT = 1
+TANK_DEPTH = -1
 TANK_LENGTH = 4
 TANK_WIDTH = 2
 
 SENSOR_POSITION = np.array([0, 0.2, 0.1])
 
 PARTICLE_COUNT = 1000
-
 
 class LocalizationNode():
     def __init__(self):
@@ -54,7 +53,7 @@ class LocalizationNode():
         for i in range(self.num_particles):
             x = round(random.random(), 4) * TANK_LENGTH
             y = round(random.random(), 4) * TANK_WIDTH
-            z = -round(random.random(), 4) * TANK_HEIGHT
+            z = round(random.random(), 4) * TANK_DEPTH
             self.particles.append(np.array([x, y, z]))
 
             # self.particles[n] returns n'th particle

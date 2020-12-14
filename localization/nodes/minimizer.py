@@ -13,7 +13,6 @@ TANK_WIDTH = 2
 
 SENSOR_POSITION = np.array([0, 0.2, 0.1])
 
-
 class MinimizationNode():
     def __init__(self):
         rospy.init_node("minimizer")
