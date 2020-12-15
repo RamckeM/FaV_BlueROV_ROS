@@ -20,10 +20,17 @@ class LocalizationNode():
     def __init__(self):
         rospy.init_node("localization")
 
-        self.tag_1 = np.array([0.5, 3.35, -0.5])
-        self.tag_2 = np.array([1.1, 3.35, -0.5])
-        self.tag_3 = np.array([0.5, 3.35, -0.9])
-        self.tag_4 = np.array([1.1, 3.35, -0.9])
+        # Simulation
+        # self.tag_1 = np.array([0.5, 3.35, -0.5])
+        # self.tag_2 = np.array([1.1, 3.35, -0.5])
+        # self.tag_3 = np.array([0.5, 3.35, -0.9])
+        # self.tag_4 = np.array([1.1, 3.35, -0.9])
+
+        # Experiment
+        self.tag_1 = np.array([0.5, 3.35, -0.28])
+        self.tag_2 = np.array([1.1, 3.35, -0.28])
+        self.tag_3 = np.array([0.5, 3.35, -0.68])
+        self.tag_4 = np.array([1.1, 3.35, -0.68])
 
         self.num_particles = PARTICLE_COUNT
         
