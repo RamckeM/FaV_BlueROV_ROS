@@ -21,7 +21,7 @@ class PositionControlNode():
     
         self.position_setpoint.x = 0.7
         self.position_setpoint.y = 2.0
-        self.position_setpoint.z = -0.7
+        self.position_setpoint.z = -0.4
 
         self.yaw_ground = 0.0
         self.yaw_mavros = 0.0
@@ -94,10 +94,10 @@ class PositionControlNode():
 
             if (self.mcl_position.x < 0 or self.mcl_position.x > TANK_WIDTH or self.mcl_position.y < 0 or self.mcl_position.y > TANK_LENGTH
             or self.position_setpoint.x < 0 or self.position_setpoint.x > TANK_WIDTH or self.position_setpoint.y < 0 or self.position_setpoint.y > TANK_LENGTH):
-                lateral_error = 0.0
-                longitudinal_error = 0.0
+                lateral_output = 0.0
+                longitudinal_output = 0.0
             else:
-                lateral_output = lateral_error * self.lateral_gain
+                lateral_output = -lateral_error * self.lateral_gain
                 longitudinal_output = longitudinal_error * self.longitudinal_gain
                 
             self.yaw_controller()   

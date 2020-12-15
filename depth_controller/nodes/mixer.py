@@ -48,7 +48,7 @@ class MixerNode():
         self.lateral_thrust_sub = rospy.Subscriber("lateral_thrust", Float64,
                                                    self.on_lateral_thrust)
         
-        self.arm_vehicle()
+        # self.arm_vehicle()
 
 
     def arm_vehicle(self):
