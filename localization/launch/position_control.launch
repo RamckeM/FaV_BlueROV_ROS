@@ -48,8 +48,8 @@
     <node name="position_controller" pkg="localization" type="position_controller.py" output="screen" >
         <param name="is_simulation" value="False" />
         <param name="yaw_gain" value="0.4" />
-        <param name="longitudinal_gain" value="0.5" />
-        <param name="lateral_gain" value="0.5" />
+        <param name="longitudinal_gain" value="0.4" />
+        <param name="lateral_gain" value="0.4" />
     </node>
 
     <!-- Tools -->

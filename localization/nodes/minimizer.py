@@ -52,7 +52,7 @@ class MinimizationNode():
     def run(self):
         rate = rospy.Rate(20.0)
         while not rospy.is_shutdown():
-            parameters = [self.tag1, self.tag2, self.tag3, self.tag4, self.distances]
+            parameters = [self.tag_1, self.tag_2, self.tag_3, self.tag_4, self.distances]
             res = optimize.minimize(costfun, self.x0, args=(parameters), method='TNC', bounds=self.bounds)
             x = res.x
             self.x0 = x
