@@ -30,7 +30,7 @@
     <node name="mixer" pkg="depth_controller" type="mixer.py" output="screen" />
 
     <node name="depth_calculator" pkg="awesome_package" type="depth_calculator.py" output="screen" >
-        <param name="offset" value="10.09" /> <!-- 10.09 -->
+        <param name="offset" value="9.76" /> <!-- 10.09 -->
     </node>
 
     <node name="depth_controller" pkg="depth_controller" type="depth_controller.py" output="screen" >
@@ -48,8 +48,8 @@
     <node name="position_controller" pkg="localization" type="position_controller.py" output="screen" >
         <param name="is_simulation" value="False" />
         <param name="yaw_gain" value="0.4" />
-        <param name="longitudinal_gain" value="0.35" />
-        <param name="lateral_gain" value="0.35" />
+        <param name="longitudinal_gain" value="0.5" />
+        <param name="lateral_gain" value="0.5" />
     </node>
 
     <!-- Tools -->
