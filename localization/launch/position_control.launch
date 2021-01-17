@@ -5,7 +5,7 @@
     </node>
 
     <node name="depth_calculator" pkg="awesome_package" type="depth_calculator.py" output="screen" >
-        <param name="offset" value="10.02" /> <!-- 10.09 -->
+        <param name="offset" value="10.02" />
     </node>
 
     <node name="depth_controller" pkg="depth_controller" type="depth_controller.py" output="screen" >
