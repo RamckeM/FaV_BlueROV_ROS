@@ -10,6 +10,8 @@ class MixerNode():
     def __init__(self):
         rospy.init_node("mixer")
 
+        self.is_simulation = rospy.get_param('~is_simulation', 'True')
+
         self.setpoint_pub = rospy.Publisher("mavros/setpoint_motor/setpoint",
                                             MotorSetpoint,
                                             queue_size=1)
@@ -48,7 +50,8 @@ class MixerNode():
         self.lateral_thrust_sub = rospy.Subscriber("lateral_thrust", Float64,
                                                    self.on_lateral_thrust)
         
-        self.arm_vehicle()
+        if self.is_simulation is True:
+            self.arm_vehicle()
 
 
     def arm_vehicle(self):
