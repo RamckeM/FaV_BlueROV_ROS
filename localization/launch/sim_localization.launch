@@ -1,0 +1,48 @@
+<launch>
+    <!-- Vehicle spawn position so that tags are seen -->
+    <arg name="x" default="0.7"/>
+    <arg name="y" default="2.0"/>
+    <arg name="z" default="-0.7"/>
+    <arg name="P" default="0.0" />
+    <arg name="R" default="0.0" />
+    <arg name="Y" default="1.57"/>
+
+    <include file="$(find bluerov_sim)/launch/gazebo_base.launch"/>
+
+    <!-- spawn tank and AprilTags -->
+    <include file="$(find bluerov_sim)/launch/spawn_tank.launch" />
+
+    <!-- spawn BlueROV model -->
+    <include file="$(find bluerov_sim)/launch/spawn_vehicle.launch">
+        <arg name="x" value="$(arg x)"/>
+        <arg name="y" value="$(arg y)"/>
+        <arg name="z" value="$(arg z)"/>
+        <arg name="R" default="$(arg R)" />
+        <arg name="P" default="$(arg P)" />
+        <arg name="Y" default="$(arg Y)" />
+    </include>
+
+    <!--Our Range Sensor Package that publishes distances to tags -->
+    <include file="$(find range_sensor)/launch/range_sensor.launch" />
+
+    <!-- arm_vehicle is deactivated! -->
+    <node name="keyboard" pkg="bluerov_sim" type="keyboard_control.py" output="screen" />
+
+    <node name="mixer" pkg="bluerov_sim" type="mixer.py" >
+        <param name="is_simulation" value="True" />
+    </node>
+
+    <node name="depth_calculator" pkg="awesome_package" type="depth_calculator.py" output="screen" >
+        <param name="offset" value="10.09" />
+    </node>
+
+    <node name="localization" pkg="localization" type="localization.py" output="screen" />
+    <node name="minimizer" pkg="localization" type="minimizer.py" output="screen" />
+
+
+    <!-- Tools -->
+    <!-- <node name="comparison_node" pkg="localization" type="comparison.py" output="screen" />
+    <node name="data_crunching_node" pkg="localization" type="data_crunching.py" output="screen" />
+    <node name="range_analysis_node" pkg="localization" type="range_analysis.py" output="screen" /> -->
+
+</launch>
