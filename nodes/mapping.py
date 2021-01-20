@@ -10,10 +10,6 @@ from geometry_msgs.msg import Point
 from nav_msgs.msg import Odometry
 import math
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
-import matplotlib.pyplot as plt
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
 from rospy_tutorials.msg import Floats
 from rospy.numpy_msg import numpy_msg
 
