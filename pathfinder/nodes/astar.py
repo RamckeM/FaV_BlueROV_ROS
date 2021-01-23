@@ -14,6 +14,7 @@ from pathfinder.msg import Waypoint, WaypointArray
 
 class PathPlanningNode():
     def __init__(self):
+        rospy.init_node("astar")
 
         self.parent = dict()
         self.g = dict()
@@ -25,8 +26,16 @@ class PathPlanningNode():
         self.goal_position = Point()
         self.start_position = Point()
 
+        # Threshold from when an obstacle is assumed to exist
+        self.threshold = rospy.get_param('~threshold', '0.5')
+
+        # Additional safety distance which is not to be exceeded
+# Auflösung der map: Einfach eine Zelle extra?
+        self.safety_distance = rospy.get_param('~safety_distance', '1.0')
+
+
 # TBD
-        #self.map
+        self.map = np.array([35][70])
 
 
         # Listens to manual published topic
@@ -59,24 +68,44 @@ class PathPlanningNode():
 
 
     # Checks the euclidean distance from current node to goal
-    # Used to determine the next best step
     def heuristic(self, node):
         return math.hypot(self.goal_position.x - node.x, self.goal_position.y - node.y)
+
 
     # Assigns a cost to given node based on the additive cost of the last known node and the heuristic
     def f_value(self, node):
         return self.g[node] + self.heuristic(node)
 
+
+    # Assigns a discrete, integer grid value to a given continuous point
+    def assign_grid_position(self, point):
+        int_point = Point()
+        int_point.x = int(round(point.x))
+        int_point.y = int(round(point.y))
+        int_point.z = point.z
+
+        return int_point
+
+
     # Returns all neighbors of the given node
     def get_neighbor(self, node):
-        pass
+        int_node = self.assign_grid_position(node)
+        neighbors = []
+
+
+        neighbors.append()
+
 
     # Checks for a collision for the given node
-# Based on tolerance/certainty
     def check_collision(self, node):
-        pass
+# Round and safety distance!    
+        if self.map[node.x][node.y] > self.threshold:
+            return True
+        
+        return False
 
-    # Determines the cost/distance between two give nodes
+
+    # Determines the cost/distance between two given nodes
     # Used to calculate the costs for corresponding neighbor nodes
     def cost(self, node1, node2):
 
@@ -85,25 +114,30 @@ class PathPlanningNode():
         
         return math.hypot(node2.x - node1.x, node2.y - node1.y)
 
+
     # Will be called in main after finished search function
     # Returns the parent dict in reverse order
     def generate_path(self):
         path = [self.goal_position]
         point = self.goal_position
 # Kann Probleme machen wenn mcl_position nicht fix ist. Definiere Startposition ggf. neu
-        while point is not self.mcl_position:
+        while point is not self.start_position:
             point = self.parent[point]
             path.append(point)
+
+# DEBUG
+        for point in path:
+            rospy.loginfo("%d %d", point.x, point.y)
 
         return list(path)
 
 
     def search(self):
-        self.parent[self.mcl_position] = self.mcl_position
-        self.g[self.mcl_position] = 0
+        self.parent[self.start_position] = self.start_position
+        self.g[self.start_position] = 0
         self.g[self.goal_position] = math.inf
 
-        heapq.heappush(self.OPEN, (self.f_value(self.mcl_position), self.mcl_position))
+        heapq.heappush(self.OPEN, (self.f_value(self.start_position), self.start_position))
 
         while self.OPEN:
             node = heapq.heappop(self.OPEN)

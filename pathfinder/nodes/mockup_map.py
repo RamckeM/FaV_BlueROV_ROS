@@ -6,7 +6,8 @@ import numpy as np
 
 class MockupMapNode():
     def __init__(self):
-        pass
+        rospy.init_node("mockup_map")
+        
 
 
 def run(self):
