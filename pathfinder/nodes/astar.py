@@ -7,7 +7,6 @@ from std_msgs.msg import Float64
 from geometry_msgs.msg import Point
 
 
-
 # Custom message for publishing an array of geometry.point
 from pathfinder.msg import Waypoint, WaypointArray
 
@@ -30,9 +29,7 @@ class PathPlanningNode():
         self.threshold = rospy.get_param('~threshold', '0.5')
 
         # Additional safety distance which is not to be exceeded
-# Auflösung der map: Einfach eine Zelle extra?
-        self.safety_distance = rospy.get_param('~safety_distance', '1.0')
-
+        self.safety_distance = rospy.get_param('~safety_distance', '0.2')
 
 # TBD
         self.map = np.array([35][70])
@@ -43,12 +40,13 @@ class PathPlanningNode():
 
         self.mcl_position_sub = rospy.Subscriber("mcl_position", Point, self.mcl_position_callback, queue_size=1)
 
-        # Interface TBD!
+
+# Interface TBD!
         #self.static_map_sub = rospy.Subscriber("static_map", )
 
 
 # Change position_controller subscriber!
-        self.waypoint_pub = rospy.Publisher("waypoint", WaypointArray, queue_size=1)
+        self.waypoint_pub = rospy.Publisher("waypoints", WaypointArray, queue_size=1)
 
 
 
@@ -62,6 +60,7 @@ class PathPlanningNode():
         self.mcl_position.y = msg.y
         self.mcl_position.z = msg.z
 
+# WIP
     #def static_map_callback(self, msg):
         #self.map = msg
 
@@ -83,25 +82,63 @@ class PathPlanningNode():
         int_point.x = int(round(point.x))
         int_point.y = int(round(point.y))
         int_point.z = point.z
-
         return int_point
 
 
     # Returns all neighbors of the given node
+# Bessere Alternative?
     def get_neighbor(self, node):
-        int_node = self.assign_grid_position(node)
         neighbors = []
+        neighbor = Point()
+        neighbor.z = 0
 
+        neighbor.x = node.x + 1
+        neighbor.y = node.y + 1
+        neighbors.append(neighbor)
 
-        neighbors.append()
+        neighbor.x = node.x + 1
+        neighbor.y = node.y - 1
+        neighbors.append(neighbor)
+
+        neighbor.x = node.x + 1
+        neighbor.y = node.y
+        neighbors.append(neighbor)
+
+        neighbor.x = node.x - 1
+        neighbor.y = node.y + 1
+        neighbors.append(neighbor)
+
+        neighbor.x = node.x - 1
+        neighbor.y = node.y - 1
+        neighbors.append(neighbor)
+
+        neighbor.x = node.x - 1
+        neighbor.y = node.y
+        neighbors.append(neighbor)
+
+        neighbor.x = node.x
+        neighbor.y = node.y + 1
+        neighbors.append(neighbor)
+
+        neighbor.x = node.x
+        neighbor.y = node.y - 1
+        neighbors.append(neighbor)
+
+        return neighbors
+
 
 
     # Checks for a collision for the given node
     def check_collision(self, node):
-# Round and safety distance!    
-        if self.map[node.x][node.y] > self.threshold:
+# Wird die safety_distance weggerundet?
+# Alternativ: map[node.x + 1][node.y + 1] etc. -> Eine Zelle safety_distance
+        if(self.map[int(round(node.x))][int(round(node.y))] > self.threshold or 
+           self.map[int(round(node.x + self.safety_distance))][int(round(node.y + self.safety_distance))] > self.threshold or
+           self.map[int(round(node.x - self.safety_distance))][int(round(node.y + self.safety_distance))] > self.threshold or
+           self.map[int(round(node.x + self.safety_distance))][int(round(node.y - self.safety_distance))] > self.threshold or
+           self.map[int(round(node.x - self.safety_distance))][int(round(node.y - self.safety_distance))] > self.threshold):
             return True
-        
+
         return False
 
 
@@ -120,7 +157,6 @@ class PathPlanningNode():
     def generate_path(self):
         path = [self.goal_position]
         point = self.goal_position
-# Kann Probleme machen wenn mcl_position nicht fix ist. Definiere Startposition ggf. neu
         while point is not self.start_position:
             point = self.parent[point]
             path.append(point)
@@ -129,7 +165,7 @@ class PathPlanningNode():
         for point in path:
             rospy.loginfo("%d %d", point.x, point.y)
 
-        return list(path)
+        return path
 
 
     def search(self):
@@ -142,7 +178,7 @@ class PathPlanningNode():
         while self.OPEN:
             node = heapq.heappop(self.OPEN)
 
-            if node == self.goal_position:
+            if node == self.assign_grid_position(self.goal_position):
                 break
 
             for neighbor in self.get_neighbor(node):
@@ -163,27 +199,24 @@ class PathPlanningNode():
         while not rospy.is_shutdown():
 
             # Fix the start position for one iteration
-            self.start_postion = self.mcl_position
+            self.start_postion = self.assign_grid_position(self.mcl_position)
 
             # A* algorithm
             self.search()
 
-            # Return list of waypoints
-            #waypoints = self.generate_path()
 
-
+            path_msg = WaypointArray()
             waypoint_msg = Waypoint()
-            msg = WaypointArray()
             index = 1
-# Is this good practice?
             for waypoint in self.generate_path():
                 waypoint_msg.id = index
                 waypoint_msg.point = waypoint
+                path_msg.waypoints.append(waypoint_msg)
                 index += 1
             
-            # setze z koordiante auf const. wert?
+# Setze z-Koordinate auf const. Wert
 
-            self.waypoint_pub.publish()
+            self.waypoint_pub.publish(path_msg)
 
             rate.sleep()
 
