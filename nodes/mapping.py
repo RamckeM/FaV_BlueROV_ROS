@@ -47,7 +47,8 @@ class MappingNode():
         # --- measurements
         self.obstacle = np.array([1., 2.75])
         # publishing
-        self.mapping_pub = rospy.Publisher("mapping", Floats,queue_size=(self.nb_cells))
+        self.mapping_pub = rospy.Publisher("mapping", (Floats),queue_size=(self.nb_cells))
+        self.mapping_param_pub = rospy.Publisher("mapping_param", (Floats),queue_size=(2))
 
     def initialize_grid(self): 
         # --- initialize mesh
@@ -131,6 +132,7 @@ class MappingNode():
             map = 1.0 - 1.0 / (1.0 + np.exp(self.grid[:,2]))
             #map = np.reshape(map,(TANK_NUMBER_Y,TANK_NUMBER_X))
             self.mapping_pub.publish(map)
+            self.mapping_param_pub.publish(np.array([TANK_NUMBER_X, TANK_NUMBER_Y, TANK_X, TANK_Y]))
             print("--- %s seconds ---" % (time.time() - start_time))
             rate.sleep()
 
