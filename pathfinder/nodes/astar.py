@@ -5,6 +5,8 @@ import heapq
 import numpy as np
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Point
+# Needed for map subscriber
+from rospy_tutorials.msg import Floats
 
 
 # Custom message for publishing an array of geometry.point
@@ -31,19 +33,17 @@ class PathPlanningNode():
         # Additional safety distance which is not to be exceeded
         self.safety_distance = rospy.get_param('~safety_distance', '1.0')
 
-# TBD
-        self.map = np.array([35][70])
+        self.map_resolution_x = rospy.get_param('/map_resolution_x')
+        self.map_resolution_y = rospy.get_param('/map_resolution_y')
 
+        self.map = np.array([self.map_resolution_x][self.map_resolution_y])
 
         # Listens to manual published topic
         self.goal_position_sub = rospy.Subscriber("goal_position", Point, self.goal_position_callback, queue_size=1)
 
         self.mcl_position_sub = rospy.Subscriber("mcl_position", Point, self.mcl_position_callback, queue_size=1)
 
-
-# Interface TBD!
-        #self.static_map_sub = rospy.Subscriber("static_map", )
-
+        self.mapping_sub = rospy.Subscriber("mapping", Floats, self.mapping_callback, queue_size=(self.map_resolution_x * self.map_resolution_y))
 
 # Change position_controller subscriber!
         self.waypoint_pub = rospy.Publisher("waypoints", WaypointArray, queue_size=1)
@@ -60,10 +60,8 @@ class PathPlanningNode():
         self.mcl_position.y = msg.y
         self.mcl_position.z = msg.z
 
-# WIP
-    #def static_map_callback(self, msg):
-        #self.map = msg
-
+    def mapping_callback(self, msg):
+        self.map = np.reshape(msg.data, self.map_resolution_y, self.map_resolution_x)
 
 
     # Checks the euclidean distance from current node to goal
