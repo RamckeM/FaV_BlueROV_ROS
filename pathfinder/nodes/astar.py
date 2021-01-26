@@ -29,7 +29,7 @@ class PathPlanningNode():
         self.threshold = rospy.get_param('~threshold', '0.5')
 
         # Additional safety distance which is not to be exceeded
-        self.safety_distance = rospy.get_param('~safety_distance', '0.2')
+        self.safety_distance = rospy.get_param('~safety_distance', '1.0')
 
 # TBD
         self.map = np.array([35][70])
