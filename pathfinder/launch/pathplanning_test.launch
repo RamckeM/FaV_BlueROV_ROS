@@ -57,7 +57,7 @@
     <group>
         <node name="pathplanning" pkg="pathfinder" type="astar.py" output="screen" >
             <param name="threshold" value="0.6" />
-            <param name="safety_distance" value="0.2" />
+            <param name="safety_distance" value="1.0" />
         </node>
         <node name="mapping" pkg="pathfinder" type="mockup_map.py" output="screen" />
         <param name="map_resolution_x" value="35" />

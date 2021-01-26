@@ -7,8 +7,6 @@ from std_msgs.msg import Float64
 from geometry_msgs.msg import Point
 # Needed for map subscriber
 from rospy_tutorials.msg import Floats
-
-
 # Custom message for publishing an array of geometry.point
 from pathfinder.msg import Waypoint, WaypointArray
 
@@ -36,7 +34,7 @@ class PathPlanningNode():
         self.map_resolution_x = rospy.get_param('/map_resolution_x')
         self.map_resolution_y = rospy.get_param('/map_resolution_y')
 
-        self.map = np.array([self.map_resolution_x][self.map_resolution_y])
+        self.map = np.zeros((self.map_resolution_y, self.map_resolution_x))
 
         # Listens to manual published topic
         self.goal_position_sub = rospy.Subscriber("goal_position", Point, self.goal_position_callback, queue_size=1)
@@ -145,7 +143,7 @@ class PathPlanningNode():
     def cost(self, node1, node2):
 
         if self.check_collision(node2):
-            return math.inf
+            return np.inf
         
         return math.hypot(node2.x - node1.x, node2.y - node1.y)
 
@@ -169,12 +167,12 @@ class PathPlanningNode():
     def search(self):
         self.parent[self.start_position] = self.start_position
         self.g[self.start_position] = 0
-        self.g[self.goal_position] = math.inf
+        self.g[self.goal_position] = np.inf
 
         heapq.heappush(self.OPEN, (self.f_value(self.start_position), self.start_position))
 
         while self.OPEN:
-            node = heapq.heappop(self.OPEN)
+            _, node = heapq.heappop(self.OPEN)
 
             if node == self.assign_grid_position(self.goal_position):
                 break
@@ -183,7 +181,7 @@ class PathPlanningNode():
                 new_cost = self.g[node] + self.cost(node, neighbor)
 
                 if neighbor not in self.g:
-                    self.g[neighbor] = math.inf
+                    self.g[neighbor] = np.inf
 
                 if new_cost < self.g[neighbor]:
                     self.g[neighbor] = new_cost

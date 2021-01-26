@@ -10,11 +10,11 @@ class MockupMapNode():
         
 
 
-def run(self):
-    rate = rospy.Rate(20.0)
-    while not rospy.is_shutdown():
+    def run(self):
+        rate = rospy.Rate(20.0)
+        while not rospy.is_shutdown():
 
-        rate.sleep()
+            rate.sleep()
 
 
 def main():
