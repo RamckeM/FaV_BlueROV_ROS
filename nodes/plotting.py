@@ -72,7 +72,7 @@ class PlottingNode():
             #np.savetxt(f,self.map)
             #np.savetxt(f,np.array([1]))
             
-            with open(r'/home/hendrik/fav/catkin_ws/data.csv', 'ab') as f:
+            with open(r'/home/hendrik/fav/catkin_ws/src/mapping_package/data.csv', 'ab') as f:
                 print("safe")
                 writer = csv.writer(f)
                 writer.writerow(np.reshape(self.map,(self.nb_cells,1)))
