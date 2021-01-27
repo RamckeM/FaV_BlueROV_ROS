@@ -12,13 +12,18 @@ import math
 import numpy as np
 from rospy_tutorials.msg import Floats
 from rospy.numpy_msg import numpy_msg
+from fav_object_detection.msg import ObjectDetectionArray, ObjectDetection
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, \
+    TwistWithCovarianceStamped,Point
+from pyquaternion import Quaternion
+from tf.transformations import euler_from_quaternion
 
 TANK_Z = -1.
 TANK_Y = 4.
 TANK_X = 2.
 
-TANK_NUMBER_Y = 70
-TANK_NUMBER_X = 35
+TANK_NUMBER_Y = 80
+TANK_NUMBER_X = 40
 class MappingNode():
     def __init__(self):
         rospy.init_node("mapping")
@@ -49,6 +54,37 @@ class MappingNode():
         # publishing
         self.mapping_pub = rospy.Publisher("mapping", (Floats),queue_size=(self.nb_cells))
         self.mapping_param_pub = rospy.Publisher("mapping_param", (Floats),queue_size=(2))
+        # subscribing
+        self.obstacle_sub = rospy.Subscriber("objects",ObjectDetectionArray,self.obstacle_callback,queue_size=1)
+        self.position_sub = rospy.Subscriber("ekf_pose",PoseWithCovarianceStamped,self.position_callback,queue_size=1)
+        self.ground_orientation_sub = rospy.Subscriber("ground_truth/state", Odometry, self.ground_orientation_callback,queue_size=1)
+    
+    def ground_orientation_callback(self,msg):
+        orientation_q = msg.pose.pose.orientation
+        orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+        (roll, pitch, yaw) = euler_from_quaternion(orientation_list)
+        self.yaw_gs = yaw
+        #print(yaw)
+
+    def position_callback(self,msg):
+        self.position_vec[0] = msg.pose.pose.position.x
+        self.position_vec[1] = msg.pose.pose.position.y
+
+    def obstacle_callback(self,msg):
+        number_obst = len(msg.detections)
+        if number_obst > 0:
+            self.obstacle = np.zeros((number_obst+1,2))
+            self.alpha = np.zeros(number_obst+1)
+            for i in range(number_obst):
+                obstacle = msg.detections[i]
+                self.obstacle[i,0] = obstacle.pose.position.x
+                self.obstacle[i,1] = obstacle.pose.position.y
+                self.alpha[i] = obstacle.size
+                #print(obstacle.size)
+        else:
+            self.obstacle = np.zeros(2)
+            self.alpha = np.zeros(1)
+        #print(self.obstacle)
 
     def initialize_grid(self): 
         # --- initialize mesh
@@ -87,7 +123,10 @@ class MappingNode():
             else:
                 obstacle = self.obstacle
                 alpha = self.alpha
+            if alpha <= 0:
+                break
             #print(self.obstacle)
+            #print("obst")
             #print(obstacle)
             dist_obst = np.linalg.norm(obstacle-self.position_vec)      
             phi_obstacle = math.atan2((obstacle[1] - self.position_vec[1]), (obstacle[0] - self.position_vec[0])) 
@@ -124,6 +163,7 @@ class MappingNode():
         self.grid[TANK_NUMBER_Y-1:self.nb_cells:TANK_NUMBER_X,2] = factor* self.l_occ
 
     def run(self):
+        time.sleep(10)
         rate = rospy.Rate(20.0)
         self.initialize_grid()
         while not rospy.is_shutdown():
@@ -133,7 +173,7 @@ class MappingNode():
             #map = np.reshape(map,(TANK_NUMBER_Y,TANK_NUMBER_X))
             self.mapping_pub.publish(map)
             self.mapping_param_pub.publish(np.array([TANK_NUMBER_X, TANK_NUMBER_Y, TANK_X, TANK_Y]))
-            print("--- %s seconds ---" % (time.time() - start_time))
+            #print("--- %s seconds ---" % (time.time() - start_time))
             rate.sleep()
 
 

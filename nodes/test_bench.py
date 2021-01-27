@@ -21,8 +21,8 @@ TANK_Z = -1.
 TANK_Y = 4.
 TANK_X = 2.
 
-TANK_NUMBER_Y = 70
-TANK_NUMBER_X = 35
+TANK_NUMBER_Y = 80
+TANK_NUMBER_X = 40
 
 class MappingNode():
     def __init__(self):   
@@ -159,7 +159,7 @@ class MappingNode():
             self.position_vec = np.array([self.position.x, self.position.y-y])
             for jj in range(2):
                 for i in range(steps):
-                    self.yaw_gs = (i*1./steps) * 2* math.pi 
+                    self.yaw_gs = math.pi/2 #(i*1./steps) * 2* math.pi 
                     #self.obstacle = np.array([1.25, 2.75])
                     #self.yaw_gs = math.pi/2
                     start_time = time.time()
