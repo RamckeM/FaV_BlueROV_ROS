@@ -28,8 +28,8 @@ class MappingNode():
     def __init__(self):
         rospy.init_node("mapping")
         # --- algorithm variables
-        self.l_occ = 1.0
-        self.l_free = -1.0
+        self.l_occ = 5.0e-1
+        self.l_free = -5.0e-1
         self.l_0 = 0.0
         self.nb_cells = TANK_NUMBER_X*TANK_NUMBER_Y
         # --- columns: 1. x-coord, 2. y-coord, 3. weights

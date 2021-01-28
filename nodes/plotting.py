@@ -49,9 +49,6 @@ class PlottingNode():
     def mapping_callback(self,msg):
         self.map = msg.data#,(TANK_NUMBER_Y,TANK_NUMBER_X) ##np.reshape(msg.data,(TANK_NUMBER_Y,TANK_NUMBER_X))
 
-    def scatter(self):
-        x = 1
-
     def run(self):
         time.sleep(9)
         rate = rospy.Rate(10.0)
@@ -68,10 +65,9 @@ class PlottingNode():
         #fig.show()
         #f=open('/home/hendrik/fav/catkin_ws/test.dat','ab')
         while not rospy.is_shutdown():
-            print(np.mean(self.map))
+            #print(np.mean(self.map))
             #np.savetxt(f,self.map)
-            #np.savetxt(f,np.array([1]))
-            
+            #np.savetxt(f,np.array([1])) 
             with open(r'/home/hendrik/fav/catkin_ws/src/mapping_package/data.csv', 'ab') as f:
                 print("safe")
                 writer = csv.writer(f)
