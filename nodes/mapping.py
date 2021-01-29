@@ -79,7 +79,12 @@ class MappingNode():
                 obstacle = msg.detections[i]
                 self.obstacle[i,0] = obstacle.pose.position.x
                 self.obstacle[i,1] = obstacle.pose.position.y
-                self.alpha[i] = obstacle.size
+                modulo = np.floor(math.fmod(100*obstacle.size,100*self.cell_dx))
+                if modulo*self.cell_dx <= obstacle.size:
+                    self.alpha[i] = (modulo+1.)*self.cell_dx + self.cell_dx/2.
+                else:
+                    self.alpha[i] = obstacle.size
+                #print(self.alpha[i])
                 #print(obstacle.size)
         else:
             self.obstacle = np.zeros(2)
@@ -130,7 +135,7 @@ class MappingNode():
             #print(obstacle)
             dist_obst = np.linalg.norm(obstacle-self.position_vec)      
             phi_obstacle = math.atan2((obstacle[1] - self.position_vec[1]), (obstacle[0] - self.position_vec[0])) 
-            phi_range = np.arctan(alpha/(2*dist_obst))
+            phi_range = 1.5*np.arctan(alpha/(2*dist_obst))
 
             #adaptation of angle bc overflow
             if ((phi - self.yaw_gs)) >= (math.pi):
@@ -143,7 +148,7 @@ class MappingNode():
                 #phi_range = phi_range +2*math.pi
             # updater
             #if dist_grid > dist_obst or abs(phi - self.yaw_gs) > self.beta/2:
-            #if dist_grid > min([self.radius_max, dist_obst+self.alpha/2]) or abs(phi - self.yaw_gs) > self.beta/2:
+            #if dist_grid > min([self.radius_max, dist_  obst+self.alpha/2]) or abs(phi - self.yaw_gs) > self.beta/2:
             if dist_grid > self.radius_max or abs(phi - self.yaw_gs) > self.beta/2 \
              or (dist_grid > dist_obst+alpha/2 and (((phi)) >= (phi_obstacle - phi_range) and (phi) <= (phi_obstacle + phi_range))):
                 l_update = max([self.l_0, l_update])
