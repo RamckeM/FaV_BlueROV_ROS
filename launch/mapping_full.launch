@@ -30,7 +30,10 @@
     </include>
     
     <!-- Tools -->
-    <node name="mapping" pkg="mapping_package" type="mapping.py" output="screen" />
+    <node name="mapping" pkg="mapping_package" type="mapping.py" output="screen" >
+        <param name="TANK_NUMBER_Y" value="80.0" />
+        <param name="TANK_NUMBER_X" value="40.0" />
+    </node>
     <node name="plotting" pkg="mapping_package" type="plotting.py" output="screen" />
     <node name="object_detection" pkg="fav_object_detection" type="object_detection.py" output="screen" >
         <param name="vehicle_name" value="$(arg vehicle_name)" />

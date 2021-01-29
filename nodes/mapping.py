@@ -22,12 +22,15 @@ TANK_Z = -1.
 TANK_Y = 4.
 TANK_X = 2.
 
-TANK_NUMBER_Y = 80
-TANK_NUMBER_X = 40
+TANK_NUMBER_Y = 80 #rospy.get_param('~TANK_NUMBER_Y')
+TANK_NUMBER_X = 40 #rospy.get_param('~TANK_NUMBER_X')
+
+
 class MappingNode():
     def __init__(self):
         rospy.init_node("mapping")
         # --- algorithm variables
+
         self.l_occ = 5.0e-1
         self.l_free = -5.0e-1
         self.l_0 = 0.0
