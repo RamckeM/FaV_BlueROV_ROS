@@ -64,12 +64,12 @@ class PlottingNode():
         plt.ion()
         #fig.show()
         #f=open('/home/hendrik/fav/catkin_ws/test.dat','ab')
+        print("--- start plottin ---")
         while not rospy.is_shutdown():
             #print(np.mean(self.map))
             #np.savetxt(f,self.map)
             #np.savetxt(f,np.array([1])) 
             with open(r'/home/hendrik/fav/catkin_ws/src/mapping_package/data.csv', 'ab') as f:
-                print("safe")
                 writer = csv.writer(f)
                 writer.writerow(np.reshape(self.map,(self.nb_cells,1)))
             rate.sleep()

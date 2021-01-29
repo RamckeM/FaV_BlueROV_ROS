@@ -30,16 +30,17 @@ class MappingNode():
     def __init__(self):
         rospy.init_node("mapping")
         # --- algorithm variables
-
+        self.tank_number_y = int(rospy.get_param('~tank_number_y'))
+        self.tank_number_x = int(rospy.get_param('~tank_number_x'))
         self.l_occ = 5.0e-1
         self.l_free = -5.0e-1
         self.l_0 = 0.0
-        self.nb_cells = TANK_NUMBER_X*TANK_NUMBER_Y
+        self.nb_cells = self.tank_number_x*self.tank_number_y
         # --- columns: 1. x-coord, 2. y-coord, 3. weights
-        self.grid = self.l_0 * np.ones((TANK_NUMBER_X*TANK_NUMBER_Y,3))
+        self.grid = self.l_0 * np.ones((self.tank_number_x*self.tank_number_y,3))
         # --- cell length and width
-        self.cell_dx = TANK_X/TANK_NUMBER_X
-        self.cell_dy = TANK_Y/TANK_NUMBER_Y
+        self.cell_dx = TANK_X/self.tank_number_x
+        self.cell_dy = TANK_Y/self.tank_number_y
         # --- boundary data
         self.grid_boundary = np.array([[self.cell_dx/2, TANK_X - self.cell_dx/2], [self.cell_dy/2, TANK_Y - self.cell_dy/2]])
         # --- ROV
@@ -96,24 +97,24 @@ class MappingNode():
 
     def initialize_grid(self): 
         # --- initialize mesh
-        x = np.linspace(0+self.cell_dx/2,TANK_X-self.cell_dx/2,TANK_NUMBER_X)
-        y = np.linspace(0+self.cell_dy/2,TANK_Y-self.cell_dy/2,TANK_NUMBER_Y)
+        x = np.linspace(0+self.cell_dx/2,TANK_X-self.cell_dx/2,self.tank_number_x)
+        y = np.linspace(0+self.cell_dy/2,TANK_Y-self.cell_dy/2,self.tank_number_y)
         xv, yv = np.meshgrid(x, y)
-        xv = np.reshape(xv,TANK_NUMBER_X*TANK_NUMBER_Y)
-        yv = np.reshape(yv,TANK_NUMBER_X*TANK_NUMBER_Y)
+        xv = np.reshape(xv,self.tank_number_x*self.tank_number_y)
+        yv = np.reshape(yv,self.tank_number_x*self.tank_number_y)
         # --- set coordinates
         self.grid[:,0] = xv
         self.grid[:,1] = yv
         # --- set weights of boundary near to 1
         factor = 100
-        self.grid[0:TANK_NUMBER_X,2] = factor*self.l_occ
-        self.grid[self.nb_cells -TANK_NUMBER_X: self.nb_cells,2] = factor*self.l_occ
-        self.grid[0:self.nb_cells:TANK_NUMBER_X ,2] = factor* self.l_occ
-        self.grid[TANK_NUMBER_Y-1:self.nb_cells:TANK_NUMBER_X,2] = factor* self.l_occ
+        self.grid[0:self.tank_number_x,2] = factor*self.l_occ
+        self.grid[self.nb_cells -self.tank_number_x: self.nb_cells,2] = factor*self.l_occ
+        self.grid[0:self.nb_cells:self.tank_number_x ,2] = factor* self.l_occ
+        self.grid[self.tank_number_y-1:self.nb_cells:self.tank_number_x,2] = factor* self.l_occ
 
     def map_updating(self):
         #for i in range(self.nb_cells):
-        for i in range(TANK_NUMBER_X+1,self.nb_cells-TANK_NUMBER_X-1):
+        for i in range(self.tank_number_x+1,self.nb_cells-self.tank_number_x-1):
             self.grid[i, 2] = self.grid[i, 2] + self.inverse_sensor_model(i) - self.l_0
         self.post_processing()
 
@@ -165,23 +166,25 @@ class MappingNode():
 
     def post_processing(self):
         factor = 100.
-        #self.grid[0:TANK_NUMBER_X,2] = factor*self.l_occ
-        #self.grid[self.nb_cells -TANK_NUMBER_X: self.nb_cells,2] = factor*self.l_occ
-        self.grid[0:self.nb_cells:TANK_NUMBER_X ,2] = factor* self.l_occ
-        self.grid[TANK_NUMBER_Y-1:self.nb_cells:TANK_NUMBER_X,2] = factor* self.l_occ
+        #self.grid[0:self.tank_number_x,2] = factor*self.l_occ
+        #self.grid[self.nb_cells -self.tank_number_x: self.nb_cells,2] = factor*self.l_occ
+        self.grid[0:self.nb_cells:self.tank_number_x ,2] = factor* self.l_occ
+        self.grid[self.tank_number_y-1:self.nb_cells:self.tank_number_x,2] = factor* self.l_occ
 
     def run(self):
         time.sleep(10)
         rate = rospy.Rate(20.0)
         self.initialize_grid()
+        print("--- start mapping ---")
         while not rospy.is_shutdown():
             start_time = time.time()
             self.map_updating()
             map = 1.0 - 1.0 / (1.0 + np.exp(self.grid[:,2]))
-            #map = np.reshape(map,(TANK_NUMBER_Y,TANK_NUMBER_X))
+            #map = np.reshape(map,(self.tank_number_y,self.tank_number_x))
             self.mapping_pub.publish(map)
-            self.mapping_param_pub.publish(np.array([TANK_NUMBER_X, TANK_NUMBER_Y, TANK_X, TANK_Y]))
+            self.mapping_param_pub.publish(np.array([self.tank_number_x, self.tank_number_y, TANK_X, TANK_Y]))
             #print("--- %s seconds ---" % (time.time() - start_time))
+            #print("mapping")
             rate.sleep()
 
 
