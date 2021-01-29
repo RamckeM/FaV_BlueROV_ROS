@@ -39,36 +39,22 @@ TANK_NUMBER_X = 40
 class PlottingNode():
     def __init__(self):
         rospy.init_node("mapping_plot")
-        self.nb_cells = TANK_NUMBER_X*TANK_NUMBER_Y
-        self.map = np.zeros((TANK_NUMBER_Y,TANK_NUMBER_X))
-        self.cell_dx = TANK_X/TANK_NUMBER_X
-        self.cell_dy = TANK_Y/TANK_NUMBER_Y
+        self.tank_number_y = int(rospy.get_param('~tank_number_y'))
+        self.tank_number_x = int(rospy.get_param('~tank_number_x'))
+        self.nb_cells = self.tank_number_x*self.tank_number_y
+        self.cell_dx = TANK_X/self.tank_number_x
+        self.cell_dy = TANK_Y/self.tank_number_y
         self.mapping_sub = rospy.Subscriber("mapping",(Floats),self.mapping_callback,queue_size=(self.nb_cells))
         self.map = 0.5*np.ones(self.nb_cells)
 
     def mapping_callback(self,msg):
-        self.map = msg.data#,(TANK_NUMBER_Y,TANK_NUMBER_X) ##np.reshape(msg.data,(TANK_NUMBER_Y,TANK_NUMBER_X))
+        self.map = msg.data
 
     def run(self):
         time.sleep(9)
         rate = rospy.Rate(10.0)
-        x = np.linspace(0+self.cell_dx/2,TANK_X-self.cell_dx/2,TANK_NUMBER_X)
-        y = np.linspace(0+self.cell_dy/2,TANK_Y-self.cell_dy/2,TANK_NUMBER_Y)
-        xv, yv = np.meshgrid(x, y)
-        self.xv = np.reshape(xv,TANK_NUMBER_X*TANK_NUMBER_Y)
-        self.yv = np.reshape(yv,TANK_NUMBER_X*TANK_NUMBER_Y)
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        sc = ax.scatter(self.xv, self.yv, self.map)
-        ax.view_init(elev=90., azim=(0))
-        plt.ion()
-        #fig.show()
-        #f=open('/home/hendrik/fav/catkin_ws/test.dat','ab')
         print("--- start plottin ---")
         while not rospy.is_shutdown():
-            #print(np.mean(self.map))
-            #np.savetxt(f,self.map)
-            #np.savetxt(f,np.array([1])) 
             with open(r'/home/hendrik/fav/catkin_ws/src/mapping_package/data.csv', 'ab') as f:
                 writer = csv.writer(f)
                 writer.writerow(np.reshape(self.map,(self.nb_cells,1)))
