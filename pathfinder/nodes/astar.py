@@ -3,7 +3,6 @@ import rospy
 import math
 import heapq
 import numpy as np
-from std_msgs.msg import Float64
 from geometry_msgs.msg import Point
 # Needed for map subscriber
 from rospy_tutorials.msg import Floats
@@ -15,7 +14,7 @@ class PathPlanningNode():
     def __init__(self):
         rospy.init_node("astar")
 
-        self.parent = dict()
+        self.PARENT = dict()
         self.g = dict()
 
         self.OPEN = []
@@ -43,7 +42,7 @@ class PathPlanningNode():
 
         self.mapping_sub = rospy.Subscriber("mapping", Floats, self.mapping_callback, queue_size=(self.map_resolution_x * self.map_resolution_y))
 
-# Change position_controller subscriber!
+#TODO: Change position_controller subscriber!
         self.waypoint_pub = rospy.Publisher("waypoints", WaypointArray, queue_size=1)
 
 
@@ -59,7 +58,9 @@ class PathPlanningNode():
         self.mcl_position.z = msg.z
 
     def mapping_callback(self, msg):
-        self.map = np.reshape(msg.data, self.map_resolution_y, self.map_resolution_x)
+        temp = np.array((msg.data))
+        self.map = np.reshape(temp, (self.map_resolution_y, self.map_resolution_x))
+        #self.map = np.reshape(msg.data, self.map_resolution_y, self.map_resolution_x)
 
 
     # Checks the euclidean distance from current node to goal
@@ -82,57 +83,66 @@ class PathPlanningNode():
 
 
     # Returns all neighbors of the given node
-# Bessere Alternative?
+    # Fucking ugly, don't read!
+#TODO: Bessere Alternative?
     def get_neighbor(self, node):
         neighbors = []
         neighbor = Point()
         neighbor.z = 0
 
-        neighbor.x = node.x + 1
-        neighbor.y = node.y + 1
-        neighbors.append(neighbor)
+        if node.x < self.map_resolution_x and node.y < self.map_resolution_y:
+            neighbor.x = node.x + 1
+            neighbor.y = node.y + 1
+            neighbors.append(neighbor)
 
-        neighbor.x = node.x + 1
-        neighbor.y = node.y - 1
-        neighbors.append(neighbor)
+        if node.x < self.map_resolution_x and node.y > 0:
+            neighbor.x = node.x + 1
+            neighbor.y = node.y - 1
+            neighbors.append(neighbor)
 
-        neighbor.x = node.x + 1
-        neighbor.y = node.y
-        neighbors.append(neighbor)
+        if node.x < self.map_resolution_x:
+            neighbor.x = node.x + 1
+            neighbor.y = node.y
+            neighbors.append(neighbor)
 
-        neighbor.x = node.x - 1
-        neighbor.y = node.y + 1
-        neighbors.append(neighbor)
+        if node.x > 0 and node.y < self.map_resolution_y:
+            neighbor.x = node.x - 1
+            neighbor.y = node.y + 1
+            neighbors.append(neighbor)
 
-        neighbor.x = node.x - 1
-        neighbor.y = node.y - 1
-        neighbors.append(neighbor)
+        if node.x > 0 and node.y > 0:
+            neighbor.x = node.x - 1
+            neighbor.y = node.y - 1
+            neighbors.append(neighbor)
 
-        neighbor.x = node.x - 1
-        neighbor.y = node.y
-        neighbors.append(neighbor)
+        if node.x > 0:
+            neighbor.x = node.x - 1
+            neighbor.y = node.y
+            neighbors.append(neighbor)
 
-        neighbor.x = node.x
-        neighbor.y = node.y + 1
-        neighbors.append(neighbor)
+        if node.y < self.map_resolution_y:
+            neighbor.x = node.x
+            neighbor.y = node.y + 1
+            neighbors.append(neighbor)
 
-        neighbor.x = node.x
-        neighbor.y = node.y - 1
-        neighbors.append(neighbor)
+        if node.y > 0:
+            neighbor.x = node.x
+            neighbor.y = node.y - 1
+            neighbors.append(neighbor)
 
         return neighbors
-
 
 
     # Checks for a collision for the given node
     def check_collision(self, node):
 # Wird die safety_distance weggerundet?
 # Alternativ: map[node.x + 1][node.y + 1] etc. -> Eine Zelle safety_distance
-        if(self.map[int(round(node.x))][int(round(node.y))] > self.threshold or 
-           self.map[int(round(node.x + self.safety_distance))][int(round(node.y + self.safety_distance))] > self.threshold or
-           self.map[int(round(node.x - self.safety_distance))][int(round(node.y + self.safety_distance))] > self.threshold or
-           self.map[int(round(node.x + self.safety_distance))][int(round(node.y - self.safety_distance))] > self.threshold or
-           self.map[int(round(node.x - self.safety_distance))][int(round(node.y - self.safety_distance))] > self.threshold):
+        # if(self.map[int(round(node.x))][int(round(node.y))] > self.threshold or 
+        #    self.map[int(round(node.x + self.safety_distance))][int(round(node.y + self.safety_distance))] > self.threshold or
+        #    self.map[int(round(node.x - self.safety_distance))][int(round(node.y + self.safety_distance))] > self.threshold or
+        #    self.map[int(round(node.x + self.safety_distance))][int(round(node.y - self.safety_distance))] > self.threshold or
+        #    self.map[int(round(node.x - self.safety_distance))][int(round(node.y - self.safety_distance))] > self.threshold):
+        if(self.map[int(round(node.y)), int(round(node.x))] > self.threshold):
             return True
 
         return False
@@ -149,23 +159,30 @@ class PathPlanningNode():
 
 
     # Will be called in main after finished search function
-    # Returns the parent dict in reverse order
-    def generate_path(self):
+    def generate_path(self, PARENT):
         path = [self.goal_position]
-        point = self.goal_position
-        while point is not self.start_position:
-            point = self.parent[point]
-            path.append(point)
+        s = self.goal_position
+        
+        #while s is not self.start_position:
+        while True:
+            s = PARENT[s]
+            path.append(s)
+
+
+            #rospy.loginfo(len(PARENT))  # --> 11491!!
+
+            if s == self.start_position:
+                break
 
 # DEBUG
-        for point in path:
-            rospy.loginfo("%d %d", point.x, point.y)
+        # for point in path:
+        #     rospy.loginfo("%d %d", point.x, point.y)
 
         return path
 
 
     def search(self):
-        self.parent[self.start_position] = self.start_position
+        self.PARENT[self.start_position] = self.start_position
         self.g[self.start_position] = 0
         self.g[self.goal_position] = np.inf
 
@@ -188,6 +205,8 @@ class PathPlanningNode():
                     self.PARENT[neighbor] = node
                     heapq.heappush(self.OPEN, (self.f_value(neighbor), neighbor))
 
+        return self.generate_path(self.PARENT)
+
     
 
     def run(self):
@@ -196,21 +215,25 @@ class PathPlanningNode():
 
             # Fix the start position for one iteration
             self.start_postion = self.assign_grid_position(self.mcl_position)
+#DEBUG
+            self.start_position.x = 3
+            self.start_position.y = 37
+
 
             # A* algorithm
             self.search()
 
 
-            path_msg = WaypointArray()
-            waypoint_msg = Waypoint()
-            index = 1
-            for waypoint in self.generate_path():
-                waypoint_msg.id = index
-                waypoint_msg.point = waypoint
-                path_msg.waypoints.append(waypoint_msg)
-                index += 1
+            # path_msg = WaypointArray()
+            # waypoint_msg = Waypoint()
+            # index = 1
+            # for waypoint in self.generate_path(self.PARENT):
+            #     waypoint_msg.id = index
+            #     waypoint_msg.point = waypoint
+            #     path_msg.waypoints.append(waypoint_msg)
+            #     index += 1
             
-# Setze z-Koordinate auf const. Wert
+#TODO: Setze z-Koordinate auf const. Wert
 
             self.waypoint_pub.publish(path_msg)
 
