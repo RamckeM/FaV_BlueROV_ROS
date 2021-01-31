@@ -30,13 +30,13 @@ class MockupMapNode():
             self.map[i, self.map_resolution_x - 1] = 1
             i += 1
 
-        i, j = 12, 27
-        while i < 22:
-            while j < 47:
-                self.map[j, i] = 1
-                j += 1
-            j = 27
-            i += 1
+        # i, j = 12, 27
+        # while i < 22:
+        #     while j < 47:
+        #         self.map[j, i] = 1
+        #         j += 1
+        #     j = 27
+        #     i += 1
 
 
     def run(self):
