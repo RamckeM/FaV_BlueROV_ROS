@@ -5,6 +5,8 @@ import heapq
 import numpy as np
 from geometry_msgs.msg import Point
 from rospy_tutorials.msg import Floats
+# Custom message for publishing an array of geometry.point
+from pathfinder.msg import Waypoint, WaypointArray
 
 
 class PathPlanningNode():
@@ -30,9 +32,9 @@ class PathPlanningNode():
         # Initialize empty map
         self.map = np.zeros((self.map_resolution_y, self.map_resolution_x))
 
-
         self.mapping_sub = rospy.Subscriber("mapping", Floats, self.mapping_callback, queue_size=(self.map_resolution_x * self.map_resolution_y))
 
+        self.waypoint_pub = rospy.Publisher("waypoints", WaypointArray, queue_size=8)
 
     
     def mapping_callback(self, msg):
@@ -232,9 +234,31 @@ class PathPlanningNode():
         path = [self.goal_position]
         q = self.goal_position
 
+        key_list = PARENT.keys()
+
+# That shit ain't deterministic
+
+        # for key in key_list:
+        #     if key == q:
+        #         q = PARENT[key]
+        # rospy.loginfo("NODE 1:")
+        # rospy.loginfo(q)
+
+        # for key in key_list:
+        #     if key == q:
+        #         q = PARENT[key]
+        # rospy.loginfo("NODE 2")
+        # rospy.loginfo(q)
+
+
         while True:
-            q = PARENT[q]
-            path.append(q)
+            for key in key_list:
+                if key == q:
+                    q = PARENT[key]
+                    path.append(q)
+            
+#DEBUG
+            rospy.loginfo(q)
 
             if q == self.start_position:
                 break
@@ -256,14 +280,7 @@ class PathPlanningNode():
             self.CLOSED.append(q)
 
             if q == self.goal_position:
-#DEBUG
-                rospy.loginfo("END NODE:")
-                rospy.loginfo(q)
-                rospy.loginfo(self.PARENT)
                 break
-#DEBUG
-            rospy.loginfo("NODE:")
-            rospy.loginfo(q)
 
             for neighbor in self.get_neighbors(q):
                 new_cost = self.g[q] + self.cost(q, neighbor)
@@ -276,7 +293,7 @@ class PathPlanningNode():
                     self.PARENT[neighbor] = q
                     heapq.heappush(self.OPEN, (self.f_value(neighbor), neighbor))
 
-        return self.generate_path(self.PARENT), self.CLOSED
+        #return self.generate_path(self.PARENT), self.CLOSED
 
 
     def run(self):
@@ -292,10 +309,20 @@ class PathPlanningNode():
             self.goal_position.z = 0
 
 
-            path, visited = self.search()
-#DEBUG
-            rospy.loginfo(path)
+            #path, visited = self.search()
+            # Clear
+            self.CLOSED = []
+            self.search()
 
+            path_msg = WaypointArray()
+            waypoint_msg = Waypoint()
+            # Dirty
+            for i, waypoint in enumerate(self.CLOSED):
+                waypoint_msg.id = i
+                waypoint_msg.point = waypoint
+                path_msg.waypoints.append(waypoint_msg)
+
+            self.waypoint_pub.publish(path_msg)
 
             rate.sleep()
 
