@@ -222,15 +222,20 @@ class PathPlanningNode():
 
     # Will be called in main after finished search function
     def generate_path(self):
-        pass
-        # path = [self.goal_position]
-        # q = self.goal_position
+        path = [self.goal_position]
+        q = self.goal_position
         
-        # while s is not self.start_position:
-        #     q = self.PARENT[q]
-        #     path.append(q)
+        while q is not self.start_position:
+            try:
+                q = self.PARENT[q]
+            except KeyError:
+                for entry in self.PARENT:
+                    if entry == q:
+                        q = self.PARENT[entry]
 
-        # return list(path)
+            path.append(q)
+
+        return list(path)
 
 
     def search(self):
@@ -258,7 +263,7 @@ class PathPlanningNode():
                     self.PARENT[neighbor] = q
                     heapq.heappush(self.OPEN, (self.f_value(neighbor), neighbor))
 
-        #return self.generate_path()
+        return self.generate_path()
     
 
     def run(self):
