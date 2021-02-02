@@ -100,6 +100,8 @@ class PlottingNode():
             with open(r'/home/hendrik/fav/catkin_ws/src/mapping_package/data.csv', 'ab') as f:
                 writer = csv.writer(f)
                 safe = np.reshape(self.map,(self.nb_cells,1))
+                # use this for naviagtion instead of 105
+                #safe = np.concatenate((np.array([self.position[0],self.position[1],self.yaw, self.x_setpoint,self.y_setpoint,self.yaw_setpoint])), axis=None)
                 safe = np.concatenate((np.array([self.position[0],self.position[1],self.yaw, self.x_setpoint,self.y_setpoint,self.yaw_setpoint]), safe), axis=None)
                 writer.writerow(safe)
             rate.sleep()
