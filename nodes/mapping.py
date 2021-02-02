@@ -22,8 +22,8 @@ TANK_Z = -1.
 TANK_Y = 4.
 TANK_X = 2.
 
-TANK_NUMBER_Y = 80 #rospy.get_param('~TANK_NUMBER_Y')
-TANK_NUMBER_X = 40 #rospy.get_param('~TANK_NUMBER_X')
+TANK_NUMBER_Y = 80  #rospy.get_param('~TANK_NUMBER_Y')
+TANK_NUMBER_X = 40  #rospy.get_param('~TANK_NUMBER_X')
 
 
 class MappingNode():
@@ -33,164 +33,121 @@ class MappingNode():
         self.tank_number_y = int(rospy.get_param('~tank_number_y'))
         self.tank_number_x = int(rospy.get_param('~tank_number_x'))
         self.l_occ = 5.0e-1
-        self.l_free = -5.0e-1
+        self.l_free = -1.0e-1
         self.l_0 = 0.0
-        self.nb_cells = self.tank_number_x*self.tank_number_y
-        # --- columns: 1. x-coord, 2. y-coord, 3. weights
-        self.grid = self.l_0 * np.ones((self.tank_number_x*self.tank_number_y,3))
-        # --- cell length and width
-        self.cell_dx = TANK_X/self.tank_number_x
-        self.cell_dy = TANK_Y/self.tank_number_y
-        # --- boundary data
-        self.grid_boundary = np.array([[self.cell_dx/2, TANK_X - self.cell_dx/2], [self.cell_dy/2, TANK_Y - self.cell_dy/2]])
-        # --- ROV
-        self.position = Point()
-        self.position.x = 1.
-        self.position.y = 2.
-        self.position.z = -0.5
-        self.position_vec = np.array([self.position.x, self.position.y])
-        self.yaw_gs = 0.5*math.pi # 0.  #ground state angle in pi!  # ATTTENTIONNN HAVE TO BE IN (0,2pi) !!1
-        self.beta = math.pi/3 #angle of view
-        self.alpha = np.array([0.2])
+        self.map = 0.0 * np.ones((self.tank_number_y, self.tank_number_x))
+
+        self.cell_dx = TANK_X / self.tank_number_x
+        self.cell_dy = TANK_Y / self.tank_number_y
+        self.position = np.array([0.7, 2.0])
+        self.yaw = math.pi / 2  # ground state angle in pi!
+
+        self.beta = math.pi / 3  # angle of view
         self.radius_max = 1.
-        # --- measurements
-        self.obstacle = np.array([1., 2.75])
+
+        self.obstacles = []
+        self.obstacle_shadows = []
         # publishing
-        self.mapping_pub = rospy.Publisher("mapping", (Floats),queue_size=(self.nb_cells))
-        self.mapping_param_pub = rospy.Publisher("mapping_param", (Floats),queue_size=(2))
+        self.mapping_pub = rospy.Publisher("mapping", (Floats),
+                                           queue_size=(self.tank_number_y *
+                                                       self.tank_number_x))
+        self.mapping_param_pub = rospy.Publisher("mapping_param", (Floats),
+                                                 queue_size=(2))
         # subscribing
-        self.obstacle_sub = rospy.Subscriber("objects",ObjectDetectionArray,self.obstacle_callback,queue_size=1)
-        self.position_sub = rospy.Subscriber("ekf_pose",PoseWithCovarianceStamped,self.position_callback,queue_size=1)
-        self.ground_orientation_sub = rospy.Subscriber("ground_truth/state", Odometry, self.ground_orientation_callback,queue_size=1)
-    
-    def ground_orientation_callback(self,msg):
+        self.obstacle_sub = rospy.Subscriber("objects",
+                                             ObjectDetectionArray,
+                                             self.obstacle_callback,
+                                             queue_size=1)
+        self.position_sub = rospy.Subscriber("ekf_pose",
+                                             PoseWithCovarianceStamped,
+                                             self.position_callback,
+                                             queue_size=1)
+        self.ground_orientation_sub = rospy.Subscriber(
+            "ground_truth/state",
+            Odometry,
+            self.ground_orientation_callback,
+            queue_size=1)
+
+    def ground_orientation_callback(self, msg):
         orientation_q = msg.pose.pose.orientation
-        orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+        orientation_list = [
+            orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w
+        ]
         (roll, pitch, yaw) = euler_from_quaternion(orientation_list)
-        self.yaw_gs = yaw
-        #print(yaw)
+        self.yaw = yaw
 
-    def position_callback(self,msg):
-        self.position_vec[0] = msg.pose.pose.position.x
-        self.position_vec[1] = msg.pose.pose.position.y
+    def position_callback(self, msg):
+        self.position[0] = msg.pose.pose.position.x
+        self.position[1] = msg.pose.pose.position.y
 
-    def obstacle_callback(self,msg):
-        number_obst = len(msg.detections)
-        if number_obst > 0:
-            self.obstacle = np.zeros((number_obst+1,2))
-            self.alpha = np.zeros(number_obst+1)
-            for i in range(number_obst):
-                obstacle = msg.detections[i]
-                self.obstacle[i,0] = obstacle.pose.position.x
-                self.obstacle[i,1] = obstacle.pose.position.y
-                modulo = np.floor(math.fmod(100*obstacle.size,100*self.cell_dx))
-                if modulo*self.cell_dx <= obstacle.size:
-                    self.alpha[i] = (modulo+1.)*self.cell_dx + self.cell_dx/2.
-                else:
-                    self.alpha[i] = obstacle.size
-                #print(self.alpha[i])
-                #print(obstacle.size)
-        else:
-            self.obstacle = np.zeros(2)
-            self.alpha = np.zeros(1)
-        #print(self.obstacle)
-
-    def initialize_grid(self): 
-        # --- initialize mesh
-        x = np.linspace(0+self.cell_dx/2,TANK_X-self.cell_dx/2,self.tank_number_x)
-        y = np.linspace(0+self.cell_dy/2,TANK_Y-self.cell_dy/2,self.tank_number_y)
-        xv, yv = np.meshgrid(x, y)
-        xv = np.reshape(xv,self.tank_number_x*self.tank_number_y)
-        yv = np.reshape(yv,self.tank_number_x*self.tank_number_y)
-        # --- set coordinates
-        self.grid[:,0] = xv
-        self.grid[:,1] = yv
-        # --- set weights of boundary near to 1
-        factor = 100
-        self.grid[0:self.tank_number_x,2] = factor*self.l_occ
-        self.grid[self.nb_cells -self.tank_number_x: self.nb_cells,2] = factor*self.l_occ
-        self.grid[0:self.nb_cells:self.tank_number_x ,2] = factor* self.l_occ
-        self.grid[self.tank_number_y-1:self.nb_cells:self.tank_number_x,2] = factor* self.l_occ
+    def obstacle_callback(self, msg):
+        for obstacle in msg.detections:
+            self.obstacles.append([
+                obstacle.pose.position.x, obstacle.pose.position.y,
+                obstacle.size
+            ])
 
     def map_updating(self):
-        #for i in range(self.nb_cells):
-        for i in range(self.tank_number_x+1,self.nb_cells-self.tank_number_x-1):
-            self.grid[i, 2] = self.grid[i, 2] + self.inverse_sensor_model(i) - self.l_0
-        self.post_processing()
+        self.obstacle_shadows = []
+        for obstacle in self.obstacles:
+            obst_pos = np.array([obstacle[0], obstacle[1]])
+            obst_dist = np.linalg.norm(self.position - obst_pos)
+            obst_angle = math.atan2(obst_pos[1] - self.position[1],
+                                    obst_pos[0] - self.position[0])
+            dphi = math.atan2(obstacle[2] / 2, obst_dist)
+            self.obstacle_shadows.append([obst_dist, obst_angle, dphi])
 
-    def inverse_sensor_model(self, index):
-        dist_grid = np.linalg.norm(self.grid[index,(0,1)]-self.position_vec)
-        phi = math.atan2((self.grid[index,1] - self.position_vec[1]), (self.grid[index,0] - self.position_vec[0]))
-        l_update = self.l_free
-        for sensor in range(self.obstacle.size/2):
-            sensor_index = sensor
-            #print(self.obstacle.size/2)
-            #obstacle = np.array([self.obstacle[sensor_index], self.obstacle[sensor_index+1]])
-            if (self.obstacle.size/2) >= 2:
-                obstacle = self.obstacle[sensor_index]
-                alpha = self.alpha[sensor_index]
-            else:
-                obstacle = self.obstacle
-                alpha = self.alpha
-            if alpha <= 0:
-                break
-            #print(self.obstacle)
-            #print("obst")
-            #print(obstacle)
-            dist_obst = np.linalg.norm(obstacle-self.position_vec)      
-            phi_obstacle = math.atan2((obstacle[1] - self.position_vec[1]), (obstacle[0] - self.position_vec[0])) 
-            phi_range = 1.5*np.arctan(alpha/(2*dist_obst))
+        for i in range(self.tank_number_y):
+            for j in range(self.tank_number_x):
+                pos = np.array([
+                    j * self.cell_dx + self.cell_dx / 2,
+                    i * self.cell_dy + self.cell_dy / 2
+                ])
+                if self.is_in_vision(pos):
+                    # check if object
+                    l_update = self.l_free
+                    for obstacle in self.obstacles:
+                        obst_pos = np.array([obstacle[0], obstacle[1]])
+                        if np.linalg.norm(obst_pos - pos
+                                     ) < obstacle[2] / 2. + self.cell_dx / 2.:
+                            l_update = self.l_occ
+                    self.map[i][j] += l_update
 
-            #adaptation of angle bc overflow
-            if ((phi - self.yaw_gs)) >= (math.pi):
-                phi = phi-2*math.pi
-                phi_obstacle = phi_obstacle - 2*math.pi
-                #phi_range = phi_range -2*math.pi
-            if ((phi - self.yaw_gs)) <= -(math.pi):
-                phi = phi+2*math.pi
-                phi_obstacle = phi_obstacle + 2*math.pi
-                #phi_range = phi_range +2*math.pi
-            # updater
-            #if dist_grid > dist_obst or abs(phi - self.yaw_gs) > self.beta/2:
-            #if dist_grid > min([self.radius_max, dist_  obst+self.alpha/2]) or abs(phi - self.yaw_gs) > self.beta/2:
-            if dist_grid > self.radius_max or abs(phi - self.yaw_gs) > self.beta/2 \
-             or (dist_grid > dist_obst+alpha/2 and (((phi)) >= (phi_obstacle - phi_range) and (phi) <= (phi_obstacle + phi_range))):
-                l_update = max([self.l_0, l_update])
-            elif (dist_obst <= self.radius_max) and np.linalg.norm(self.grid[index,(0,1)]-obstacle) < alpha/2: #abs(dist_grid-dist_obst) < self.alpha/2:
-                l_update = max([self.l_occ, l_update])
-            else:
-                l_update = max([self.l_free, l_update])
-        #if dist_grid > dist_obst+self.alpha/2 and (((phi) >= (phi_obstacle - phi_range) and (phi) <= (phi_obstacle + phi_range))):
-         #   l_update = self.l_0
-        return l_update
-
-    def post_processing(self):
-        factor = 100.
-        #self.grid[0:self.tank_number_x,2] = factor*self.l_occ
-        #self.grid[self.nb_cells -self.tank_number_x: self.nb_cells,2] = factor*self.l_occ
-        self.grid[0:self.nb_cells:self.tank_number_x ,2] = factor* self.l_occ
-        self.grid[self.tank_number_y-1:self.nb_cells:self.tank_number_x,2] = factor* self.l_occ
+    def is_in_vision(self, pos):
+        dist = np.linalg.norm(self.position - pos)
+        angle = math.atan2(pos[1] - self.position[1], pos[0] - self.position[0])  
+        if -self.beta/2. + self.yaw < angle < self.beta/2. + self.yaw:
+            if dist < self.radius_max:
+                isinshadow = False
+                for shadow in self.obstacle_shadows:
+                    if dist > shadow[0]:
+                        if shadow[1] - shadow[2] < angle < shadow[1] + shadow[2]:
+                            isinshadow = True
+                if not isinshadow:
+                    return True
+        return False
 
     def run(self):
         time.sleep(10)
-        rate = rospy.Rate(20.0)
-        self.initialize_grid()
         print("--- start mapping ---")
         while not rospy.is_shutdown():
-            start_time = time.time()
+            rate = rospy.Rate(10.0)
             self.map_updating()
-            map = 1.0 - 1.0 / (1.0 + np.exp(self.grid[:,2]))
-            #map = np.reshape(map,(self.tank_number_y,self.tank_number_x))
-            self.mapping_pub.publish(map)
-            self.mapping_param_pub.publish(np.array([self.tank_number_x, self.tank_number_y, TANK_X, TANK_Y]))
-            #print("--- %s seconds ---" % (time.time() - start_time))
-            #print("mapping")
+            map_vector = np.reshape(
+                self.map, (self.tank_number_x * self.tank_number_y, 1))
+            map_publish = 1.0 - 1.0 / (1.0 + np.exp(map_vector))
+            # map = np.reshape(map,(self.tank_number_y,self.tank_number_x))
+            self.mapping_pub.publish(map_publish)
+            self.mapping_param_pub.publish(
+                np.array(
+                    [self.tank_number_x, self.tank_number_y, TANK_X, TANK_Y]))
             rate.sleep()
 
 
 def main():
     node = MappingNode()
     node.run()
+
 
 if __name__ == "__main__":
     main()
