@@ -3,7 +3,7 @@ import rospy
 import math
 import heapq
 import numpy as np
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PoseWithCovarianceStamped
 from rospy_tutorials.msg import Floats
 # Custom message for publishing an array of geometry.point
 from pathfinder.msg import Waypoint, WaypointArray
@@ -19,7 +19,7 @@ class PathPlanningNode():
         self.OPEN = []
         self.CLOSED = []
 
-        self.mcl_position = Point()
+        self.position = Point()
         self.start_position = Point()
         self.goal_position = Point()
 
@@ -38,7 +38,7 @@ class PathPlanningNode():
         # Listens to manual published topic
         self.goal_position_sub = rospy.Subscriber("goal_position", Point, self.goal_position_callback, queue_size=1)
 #TODO: Subscribe to knew estimation
-        self.mcl_position_sub = rospy.Subscriber("mcl_position", Point, self.mcl_position_callback, queue_size=1)
+        self.position_sub = rospy.Subscriber("ekf_pose", PoseWithCovarianceStamped, self.position_callback, queue_size=1)
 
         self.mapping_sub = rospy.Subscriber("mapping", Floats, self.mapping_callback, queue_size=(self.map_resolution_x * self.map_resolution_y))
 
@@ -53,10 +53,10 @@ class PathPlanningNode():
         self.goal_position.y = msg.y
         self.goal_position.z = msg.z
 
-    def mcl_position_callback(self, msg):
-        self.mcl_position.x = msg.x
-        self.mcl_position.y = msg.y
-        self.mcl_position.z = msg.z
+    def position_callback(self, msg):
+        self.position.x = msg.pose.pose.position.x
+        self.position.y = msg.pose.pose.position.y
+        self.position.z = msg.pose.pose.position.z
 
     def mapping_callback(self, msg):
         self.map = np.reshape(np.array((msg.data)), (self.map_resolution_y, self.map_resolution_x))
@@ -266,7 +266,7 @@ class PathPlanningNode():
         while not rospy.is_shutdown():
 
             # Fix the start position for one iteration
-            self.start_postion = self.assign_grid_position(self.mcl_position)
+            self.start_postion = self.assign_grid_position(self.position)
 
 #####################################
             self.start_position.x = 1
