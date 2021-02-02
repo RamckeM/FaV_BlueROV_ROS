@@ -1,0 +1,78 @@
+<launch>
+    <arg name="simulate" default="true"/>
+    <arg name="launch_simulation" default="true"/>
+    <arg name="create_setpoints" default="false" doc="set to false if different node creates setpoints"/>
+    <arg name="vehicle_name" default="bluerov" doc="Something like 'uuv04' or 'bluerov.'" />
+    <arg name="vehicle_type" default="bluerov" doc="Either 'hippocampus' or 'bluerov'."/>
+    <arg name="camera_name" default="front_camera" />
+    <arg name="camera_frame" default="camera_frame" />
+    <arg name="image_topic" default="image_raw" />
+    <arg name="ns" default="$(arg camera_name)"/>
+    <arg name="launch_x_control" default="true"/>
+    <arg name="launch_y_control" default="true"/>
+    <arg name="launch_yaw_control" default="true"/>
+    <arg name="launch_z_control" default="true"/>
+    <arg name="use_ground_truth" default="true"/>
+    <arg name="record" default="false"/>
+  
+    <group if="$(arg launch_simulation)">
+      <include file="$(find bluerov_sim)/launch/example_apriltag_world.launch">
+        <arg name="objects" value="true" />
+      </include>
+    </group>
+  
+      <!-- Apriltag algorithm -->
+  <node ns="$(arg ns)" pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_node" clear_params="true" output="screen">
+    <rosparam command="load" file="$(find apriltag_ros)/config/settings.yaml" />
+    <rosparam command="load" file="$(find fav_object_detection)/config/tags_standalone.yaml" />
+    <remap from="image_rect" to="$(arg image_topic)" />
+    <param name="camera_frame" type="str" value="$(arg camera_frame)" />
+    <param name="publish_tag_detections_image" type="bool" value="true" />
+  </node>
+
+    <!-- Localization -->
+    <include file="$(find mu_auv_localization)/launch/localization.launch">
+      <arg name="vehicle_name" value="$(arg vehicle_name)" />
+      <arg name="vehicle_type" value="$(arg vehicle_type)" />
+    </include>
+    
+    <!-- Controller -->
+    <node name="mixer" pkg="fav_control" type="mixer.py" output="screen" />
+    <param name="simulate" value="$(arg simulate)" type="bool" />
+    <param name="use_ground_truth" value="$(arg use_ground_truth)" type="bool" />
+
+
+    <group if="$(arg launch_x_control)">
+        <node name="xController" pkg="fav_control" type="xController.py" output="screen" />
+    </group>
+    <group if="$(arg launch_y_control)">
+        <node name="yController" pkg="fav_control" type="yController.py" output="screen" />
+    </group>
+    <group if="$(arg launch_z_control)">
+        <node name="zController" pkg="fav_control" type="zController.py" output="screen" />
+    </group>
+    <group if="$(arg launch_yaw_control)">
+        <node name="yawController" pkg="fav_control" type="yawController.py" output="screen" />
+    </group>
+
+    <!-- Exploration -->
+    <node name="exploration" pkg="exploration" type="exploration.py" output="screen" />
+
+    <!-- Mapping -->
+    <node name="mapping" pkg="mapping_package" type="mapping.py" output="screen" >
+        <param name="tank_number_y" value="80" />
+        <param name="tank_number_x" value="40" />
+    </node>
+    <node name="plotting" pkg="mapping_package" type="plotting.py" output="screen" >
+      <param name="tank_number_y" value="80" />
+      <param name="tank_number_x" value="40" />
+    </node>
+
+
+    <node name="object_detection" pkg="fav_object_detection" type="object_detection.py" output="screen" >
+        <param name="vehicle_name" value="$(arg vehicle_name)" />
+        <param name="camera_name" value="$(arg camera_name)" />
+        <param name="ns" value="$(arg ns)" />
+    </node>
+    
+</launch>
