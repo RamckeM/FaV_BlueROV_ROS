@@ -230,11 +230,86 @@ class PathPlanningNode():
         return math.hypot(node2.x - node1.x, node2.y - node1.y)
 
 
-    def generate_path(self, PARENT):
+    def generate_path(self):
         path = [self.goal_position]
         q = self.goal_position
 
-        key_list = PARENT.keys()
+        key_list = self.PARENT.keys()
+
+        rospy.loginfo("################################")
+        rospy.loginfo("################################")
+        rospy.loginfo(q)
+
+        for key in key_list:
+            if key == q:
+                q = self.PARENT[key]
+                rospy.loginfo(q)
+                rospy.loginfo(self.PARENT[key])
+                break
+        
+        q.x = self.test1.x
+        q.y = self.test1.y
+        q.z = self.test1.z
+        rospy.loginfo("test1")
+        rospy.loginfo(q)
+        for key in key_list:
+            if key == q:
+                q = self.PARENT[key]
+                rospy.loginfo(q)
+                rospy.loginfo(self.PARENT[key])
+                break
+        
+        q.x = self.test2.x
+        q.y = self.test2.y
+        q.z = self.test2.z
+        rospy.loginfo("test2")
+        rospy.loginfo(q)
+        for key in key_list:
+            if key == q:
+                q = self.PARENT[key]
+                rospy.loginfo(q)
+                rospy.loginfo(self.PARENT[key])
+                break
+        
+        q.x = self.test3.x
+        q.y = self.test3.y
+        q.z = self.test3.z
+        rospy.loginfo("test3")
+        rospy.loginfo(q)
+        for key in key_list:
+            if key == q:
+                q = self.PARENT[key]
+                rospy.loginfo(q)
+                rospy.loginfo(self.PARENT[key])
+                break
+
+        q.x = self.test4.x
+        q.y = self.test4.y
+        q.z = self.test4.z
+        rospy.loginfo("test4")
+        rospy.loginfo(q)
+        for key in key_list:
+            if key == q:
+                q = self.PARENT[key]
+                rospy.loginfo(q)
+                rospy.loginfo(self.PARENT[key])
+                break
+
+        q.x = self.test5.x
+        q.y = self.test5.y
+        q.z = self.test5.z
+        rospy.loginfo("test5")
+        rospy.loginfo(q)
+        for key in key_list:
+            if key == q:
+                q = self.PARENT[key]
+                rospy.loginfo(q)
+                rospy.loginfo(self.PARENT[key])
+                break
+
+
+
+
 
 # That shit ain't deterministic
 
@@ -250,24 +325,26 @@ class PathPlanningNode():
         # rospy.loginfo("NODE 2")
         # rospy.loginfo(q)
 
+        # while True:
+        #     for key in key_list:
+        #         if key == q:
+        #             q = PARENT[key]
+        #             path.append(q)
 
-        while True:
-            for key in key_list:
-                if key == q:
-                    q = PARENT[key]
-                    path.append(q)
-            
-#DEBUG
-            rospy.loginfo(q)
+        #     if q == self.start_position:
+        #         break
 
-            if q == self.start_position:
-                break
-
-        return list(path)
+        # return list(path)
 
 
 
     def search(self):
+        # Reset
+        self.OPEN = []
+        self.CLOSED = []
+        self.PARENT.clear()
+        self.g.clear()
+
         self.PARENT[self.start_position] = self.start_position
         self.g[self.start_position] = 0
         self.g[self.goal_position] = np.inf
@@ -278,6 +355,9 @@ class PathPlanningNode():
 
             _, q = heapq.heappop(self.OPEN)
             self.CLOSED.append(q)
+#DEBUG
+            # rospy.loginfo(q)
+            # rospy.loginfo(self.PARENT[q])
 
             if q == self.goal_position:
                 break
@@ -293,11 +373,12 @@ class PathPlanningNode():
                     self.PARENT[neighbor] = q
                     heapq.heappush(self.OPEN, (self.f_value(neighbor), neighbor))
 
-        #return self.generate_path(self.PARENT), self.CLOSED
+        #return self.generate_path()
+        rospy.loginfo(self.PARENT)
 
 
     def run(self):
-        rate = rospy.Rate(20.0)
+        rate = rospy.Rate(100.0)
         while not rospy.is_shutdown():
 
             self.start_position.x = 1
@@ -308,21 +389,45 @@ class PathPlanningNode():
             self.goal_position.y = 8
             self.goal_position.z = 0
 
+            self.test1=Point()
+            self.test1.x = 6
+            self.test1.y = 6
+            self.test1.z = 0
+
+            self.test2=Point()
+            self.test2.x = 5
+            self.test2.y = 5
+            self.test2.z = 0
+
+            self.test3=Point()
+            self.test3.x = 4
+            self.test3.y = 4
+            self.test3.z = 0
+
+            self.test4=Point()
+            self.test4.x = 3
+            self.test4.y = 3
+            self.test4.z = 0
+
+            self.test5=Point()
+            self.test5.x = 2
+            self.test5.y = 2
+            self.test5.z = 0
+
+
 
             #path, visited = self.search()
-            # Clear
-            self.CLOSED = []
             self.search()
 
-            path_msg = WaypointArray()
-            waypoint_msg = Waypoint()
-            # Dirty
-            for i, waypoint in enumerate(self.CLOSED):
-                waypoint_msg.id = i
-                waypoint_msg.point = waypoint
-                path_msg.waypoints.append(waypoint_msg)
+            # path_msg = WaypointArray()
+            # waypoint_msg = Waypoint()
+            # # Dirty
+            # for i, waypoint in enumerate(self.CLOSED):
+            #     waypoint_msg.id = i
+            #     waypoint_msg.point = waypoint
+            #     path_msg.waypoints.append(waypoint_msg)
 
-            self.waypoint_pub.publish(path_msg)
+            # self.waypoint_pub.publish(path_msg)
 
             rate.sleep()
 

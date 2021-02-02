@@ -37,13 +37,14 @@ class PathPlanningNode():
 
         # Listens to manual published topic
         self.goal_position_sub = rospy.Subscriber("goal_position", Point, self.goal_position_callback, queue_size=1)
-
+#TODO: Subscribe to knew estimation
         self.mcl_position_sub = rospy.Subscriber("mcl_position", Point, self.mcl_position_callback, queue_size=1)
 
         self.mapping_sub = rospy.Subscriber("mapping", Floats, self.mapping_callback, queue_size=(self.map_resolution_x * self.map_resolution_y))
 
 #TODO: Change position_controller subscriber!
-        self.waypoint_pub = rospy.Publisher("waypoints", WaypointArray, queue_size=1)
+        self.waypoint_array_pub = rospy.Publisher("waypoints", WaypointArray, queue_size=50)
+        self.waypoint_pub = rospy.Publisher("position_setpoint", Point, queue_size=1)
 
 
 
@@ -72,6 +73,7 @@ class PathPlanningNode():
 
 
     # Assigns a discrete, integer grid value to a given continuous point
+#TODO: Could use this function to translate position
     def assign_grid_position(self, point):
         int_point = Point()
         int_point.x = int(round(point.x))
@@ -81,51 +83,115 @@ class PathPlanningNode():
 
 
     # Returns all neighbors of the given node
-    # Ugly af, don't read!
-    def get_neighbor(self, node):
-        neighbors = []
+    def get_neighbors(self, node):
         neighbor = Point()
         neighbor.z = 0
 
+        neighbor1 = Point()
+        neighbor1.x = node.x
+        neighbor1.y = node.y
+        neighbor1.z = node.z
+
+        neighbor2 = Point()
+        neighbor2.x = node.x
+        neighbor2.y = node.y
+        neighbor2.z = node.z
+
+        neighbor3 = Point()
+        neighbor3.x = node.x
+        neighbor3.y = node.y
+        neighbor3.z = node.z
+
+        neighbor4 = Point()
+        neighbor4.x = node.x
+        neighbor4.y = node.y
+        neighbor4.z = node.z
+        
+        neighbor5 = Point()
+        neighbor5.x = node.x
+        neighbor5.y = node.y
+        neighbor5.z = node.z
+
+        neighbor6 = Point()
+        neighbor6.x = node.x
+        neighbor6.y = node.y
+        neighbor6.z = node.z
+
+        neighbor7 = Point()
+        neighbor7.x = node.x
+        neighbor7.y = node.y
+        neighbor7.z = node.z
+
+        neighbor8 = Point()
+        neighbor8.x = node.x
+        neighbor8.y = node.y
+        neighbor8.z = node.z
+        
         if node.x < self.map_resolution_x and node.y < self.map_resolution_y:
             neighbor.x = node.x + 1
             neighbor.y = node.y + 1
-            neighbors.append(neighbor)
+
+            neighbor1.x = neighbor.x
+            neighbor1.y = neighbor.y
+            neighbor1.z = neighbor.z
 
         if node.x < self.map_resolution_x and node.y > 0:
             neighbor.x = node.x + 1
             neighbor.y = node.y - 1
-            neighbors.append(neighbor)
+
+            neighbor2.x = neighbor.x
+            neighbor2.y = neighbor.y
+            neighbor2.z = neighbor.z
 
         if node.x < self.map_resolution_x:
             neighbor.x = node.x + 1
             neighbor.y = node.y
-            neighbors.append(neighbor)
+
+            neighbor3.x = neighbor.x
+            neighbor3.y = neighbor.y
+            neighbor3.z = neighbor.z
 
         if node.x > 0 and node.y < self.map_resolution_y:
             neighbor.x = node.x - 1
             neighbor.y = node.y + 1
-            neighbors.append(neighbor)
+
+            neighbor4.x = neighbor.x
+            neighbor4.y = neighbor.y
+            neighbor4.z = neighbor.z
 
         if node.x > 0 and node.y > 0:
             neighbor.x = node.x - 1
             neighbor.y = node.y - 1
-            neighbors.append(neighbor)
+
+            neighbor5.x = neighbor.x
+            neighbor5.y = neighbor.y
+            neighbor5.z = neighbor.z
 
         if node.x > 0:
             neighbor.x = node.x - 1
             neighbor.y = node.y
-            neighbors.append(neighbor)
+
+            neighbor6.x = neighbor.x
+            neighbor6.y = neighbor.y
+            neighbor6.z = neighbor.z
 
         if node.y < self.map_resolution_y:
             neighbor.x = node.x
             neighbor.y = node.y + 1
-            neighbors.append(neighbor)
+
+            neighbor7.x = neighbor.x
+            neighbor7.y = neighbor.y
+            neighbor7.z = neighbor.z
 
         if node.y > 0:
             neighbor.x = node.x
             neighbor.y = node.y - 1
-            neighbors.append(neighbor)
+
+            neighbor8.x = neighbor.x
+            neighbor8.y = neighbor.y
+            neighbor8.z = neighbor.z
+
+        neighbors = (neighbor1, neighbor2, neighbor3, neighbor4, neighbor5, neighbor6, neighbor7, neighbor8)
 
         return neighbors
 
@@ -133,12 +199,12 @@ class PathPlanningNode():
     # Checks for a collision for the given node
     def check_collision(self, node):
 # Wird die safety_distance weggerundet?
-        # if(self.map[int(round(node.x)), int(round(node.y))] > self.threshold or 
-        #    self.map[int(round(node.x + self.safety_distance)), int(round(node.y + self.safety_distance))] > self.threshold or
-        #    self.map[int(round(node.x - self.safety_distance)), int(round(node.y + self.safety_distance))] > self.threshold or
-        #    self.map[int(round(node.x + self.safety_distance)), int(round(node.y - self.safety_distance))] > self.threshold or
-        #    self.map[int(round(node.x - self.safety_distance)), int(round(node.y - self.safety_distance))] > self.threshold):
-        if(self.map[int(round(node.y)), int(round(node.x))] > self.threshold):
+
+        if(self.map[int(round(node.x)), int(round(node.y))] > self.threshold or 
+           self.map[int(round(node.x + self.safety_distance)), int(round(node.y + self.safety_distance))] > self.threshold or
+           self.map[int(round(node.x - self.safety_distance)), int(round(node.y + self.safety_distance))] > self.threshold or
+           self.map[int(round(node.x + self.safety_distance)), int(round(node.y - self.safety_distance))] > self.threshold or
+           self.map[int(round(node.x - self.safety_distance)), int(round(node.y - self.safety_distance))] > self.threshold):
             return True
 
         return False
@@ -156,21 +222,15 @@ class PathPlanningNode():
 
     # Will be called in main after finished search function
     def generate_path(self):
-        path = [self.goal_position]
-        s = self.goal_position
+        pass
+        # path = [self.goal_position]
+        # q = self.goal_position
         
         # while s is not self.start_position:
-        #     s = self.PARENT[s]
-        #     path.append(s)
+        #     q = self.PARENT[q]
+        #     path.append(q)
 
-        rospy.loginfo(len(self.PARENT)) # für 10x10 matrix: 3013
-            #rospy.loginfo(len(PARENT)) 
-
-# DEBUG
-        # for point in path:
-        #     rospy.loginfo("%d %d", point.x, point.y)
-
-        return list(path)
+        # return list(path)
 
 
     def search(self):
@@ -181,60 +241,78 @@ class PathPlanningNode():
         heapq.heappush(self.OPEN, (self.f_value(self.start_position), self.start_position))
 
         while self.OPEN:
-            _, node = heapq.heappop(self.OPEN)
+            _, q = heapq.heappop(self.OPEN)
+            self.CLOSED.append(q)
 
-            if node == self.assign_grid_position(self.goal_position):
+            if q == self.assign_grid_position(self.goal_position):
                 break
 
-            for neighbor in self.get_neighbor(node):
-                new_cost = self.g[node] + self.cost(node, neighbor)
+            for neighbor in self.get_neighbors(q):
+                new_cost = self.g[q] + self.cost(q, neighbor)
 
                 if neighbor not in self.g:
                     self.g[neighbor] = np.inf
 
                 if new_cost < self.g[neighbor]:
                     self.g[neighbor] = new_cost
-                    self.PARENT[neighbor] = node
+                    self.PARENT[neighbor] = q
                     heapq.heappush(self.OPEN, (self.f_value(neighbor), neighbor))
 
+        #return self.generate_path()
     
 
     def run(self):
-        rate = rospy.Rate(20.0)
+        rate = rospy.Rate(50.0)
         while not rospy.is_shutdown():
 
             # Fix the start position for one iteration
             self.start_postion = self.assign_grid_position(self.mcl_position)
 
-#DEBUG
+#####################################
             self.start_position.x = 1
             self.start_position.y = 1
-#DEBUG
+            self.start_position.z = 0
+
             self.goal_position.x = 8
             self.goal_position.y = 8
+            self.goal_position.z = 0
+#####################################
 
+            # Reset
+            self.OPEN = []
+            self.CLOSED = []
+            self.PARENT.clear()
+            self.g.clear()
 
             # A* algorithm
             self.search()
 
 
-            self.generate_path()
+            waypoint_msg = Point()
+            waypoint_msg.x = self.CLOSED[1].x
+            waypoint_msg.y = self.CLOSED[1].y
+            waypoint_msg.z = self.goal_position.z
+            self.waypoint_pub.publish(waypoint_msg)
+           
 
-
-            # path_msg = WaypointArray()
-            # waypoint_msg = Waypoint()
-            # index = 1
-            # for waypoint in self.generate_path():
-            #     waypoint_msg.id = index
-            #     waypoint_msg.point = waypoint
-            #     path_msg.waypoints.append(waypoint_msg)
-            #     index += 1
+            path_msg = WaypointArray()
+            waypoint2_msg = Waypoint()
+            temp = []
+            temp2 = []
+            for i in range(len(self.CLOSED)):
+#TODO: Point is reference and will be overwritten!
+                waypoint2_msg.id = i
+                waypoint2_msg.point.x = self.CLOSED[i].x
+                waypoint2_msg.point.y = self.CLOSED[i].y
+                waypoint2_msg.point.z = self.goal_position.z
+                temp.append(waypoint2_msg.point)
             
-#TODO: Setze z-Koordinate auf const. Wert
+            path_msg.waypoints = list(temp)
+            self.waypoint_array_pub.publish(path_msg)
 
-            self.waypoint_pub.publish(path_msg)
 
             rate.sleep()
+
 
 
 def main():

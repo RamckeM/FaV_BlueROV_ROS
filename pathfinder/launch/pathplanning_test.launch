@@ -55,7 +55,7 @@
 
 
     <group>
-        <node name="pathplanning" pkg="pathfinder" type="test_astar.py" output="screen" >
+        <node name="pathplanning" pkg="pathfinder" type="astar.py" output="screen" >
             <param name="threshold" value="0.6" />
             <param name="safety_distance" value="0.0" />
         </node>
