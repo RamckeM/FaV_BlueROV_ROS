@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-from operator import gt
-from numpy.lib.function_base import gradient
-from numpy.ma.core import left_shift, reshape
+# from operator import gt
+# from numpy.lib.function_base import gradient
+# from numpy.ma.core import left_shift, reshape
 import rospy
 import time
-from rospy.topics import Subscriber
-from std_msgs.msg import Float64, Bool
+# from rospy.topics import Subscriber
+# from std_msgs.msg import Float64, Bool
 from geometry_msgs.msg import Point
 from nav_msgs.msg import Odometry
 import math
@@ -33,9 +33,9 @@ class MappingNode():
         self.tank_number_y = int(rospy.get_param('~tank_number_y'))
         self.tank_number_x = int(rospy.get_param('~tank_number_x'))
         self.l_occ = 5.0e-1
-        self.l_free = -1.0e-1
+        self.l_free = -5.0e-1
         self.l_0 = 0.0
-        self.map = 0.0 * np.ones((self.tank_number_y, self.tank_number_x))
+        self.map = np.zeros((self.tank_number_y, self.tank_number_x))
 
         self.cell_dx = TANK_X / self.tank_number_x
         self.cell_dy = TANK_Y / self.tank_number_y
@@ -108,15 +108,35 @@ class MappingNode():
                     l_update = self.l_free
                     for obstacle in self.obstacles:
                         obst_pos = np.array([obstacle[0], obstacle[1]])
-                        if np.linalg.norm(obst_pos - pos
-                                     ) < obstacle[2] / 2. + self.cell_dx / 2.:
+                        if np.linalg.norm(
+                                obst_pos -
+                                pos) < obstacle[2] / 2. + self.cell_dx / 2.:
                             l_update = self.l_occ
                     self.map[i][j] += l_update
 
     def is_in_vision(self, pos):
         dist = np.linalg.norm(self.position - pos)
-        angle = math.atan2(pos[1] - self.position[1], pos[0] - self.position[0])  
-        if -self.beta/2. + self.yaw < angle < self.beta/2. + self.yaw:
+        angle = math.atan2(pos[1] - self.position[1], pos[0] - self.position[0])
+        leftedge = -self.beta / 2 + self.yaw
+        rightedge = self.beta / 2 + self.yaw
+
+        if leftedge < -math.pi:
+            lower1 = leftedge + (2 * math.pi) #% (2 * math.pi) #- math.pi
+            upper1 = math.pi
+            lower2 = -math.pi
+            upper2 = rightedge
+        elif rightedge > math.pi:
+            lower1 = leftedge
+            upper1 = math.pi
+            lower2 = -math.pi
+            upper2 = rightedge - (2 * math.pi) #- math.pi
+        else:
+            lower1 = leftedge
+            upper1 = rightedge
+            lower2 = leftedge
+            upper2 = rightedge
+
+        if (lower1 < angle < upper1 or lower2 < angle < upper2):
             if dist < self.radius_max:
                 isinshadow = False
                 for shadow in self.obstacle_shadows:
@@ -131,7 +151,7 @@ class MappingNode():
         time.sleep(10)
         print("--- start mapping ---")
         while not rospy.is_shutdown():
-            rate = rospy.Rate(10.0)
+            rate = rospy.Rate(1.0)
             self.map_updating()
             map_vector = np.reshape(
                 self.map, (self.tank_number_x * self.tank_number_y, 1))
